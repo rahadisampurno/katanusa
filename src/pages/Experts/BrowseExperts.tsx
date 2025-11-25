@@ -2,6 +2,7 @@ import { Search, Filter } from 'lucide-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import ExpertImage from '../../components/experts/ExpertImage.tsx';
+import Footer from '../../components/layout/Footer.tsx';
 import Navbar from '../../components/layout/Navbar';
 import { experts } from '../../data/experts.ts';
 
@@ -72,15 +73,12 @@ const BrowseExpertsPage = (): JSX.Element => {
               name={expert.name}
               caption={expert.role}
               isAi={expert.isAi}
-              onClick={() =>
-                expert.isAi
-                  ? navigate(`/experts/${expert.id}/chats`)
-                  : alert('Fitur akan segera hadir.')
-              }
+              onClick={() => navigate(`/experts/${expert.id}`)}
             />
           ))}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

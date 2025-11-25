@@ -1,4 +1,5 @@
-// @ts-ignore
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 export enum ExpertGenderEnum {
   PRIA = 'pria',
   WANITA = 'wanita',
@@ -19,4 +20,5 @@ export interface Expert {
   experience?: string;
   gender: 'pria' | 'wanita';
   isAi?: boolean;
+  sources?: string[];
 }
