@@ -22,9 +22,12 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.66.1",
+    "react-markdown": "^10.1.0",
     "react-router": "^7.9.6",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
+    "use-debounce": "^10.0.6",
     "uuid": "^13.0.0",
     "zustand": "^5.0.8"
   },

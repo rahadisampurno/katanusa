@@ -13,6 +13,7 @@ import PaymentSuccessModal from '../../components/modals/PaymentSuccessModal';
 import LogoKataNusaWhite from '../../components/svgs/logo-katanusa-white.svg?react';
 import Button from '../../components/ui/Button';
 import { experts } from '../../data/experts';
+import auth from '../../libs/auth';
 
 const DetailExperts = (): JSX.Element => {
   const { id } = useParams();
@@ -111,14 +112,22 @@ const DetailExperts = (): JSX.Element => {
                 <>
                   <Button
                     className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg hover:shadow-red-600/20 transition-all w-full sm:w-auto justify-center"
-                    onClick={() => navigate(`/experts/${expert.id}/chats`)}
+                    onClick={() =>
+                      auth.isAuthenticated()
+                        ? navigate(`/experts/${expert.id}/chats`)
+                        : navigate('/login')
+                    }
                   >
                     <MessageCircle />
                     Mulai Chat
                   </Button>
                   <Button
                     className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg hover:shadow-red-600/20 transition-all w-full sm:w-auto justify-center"
-                    onClick={() => navigate(`/experts/${expert.id}/chats`)}
+                    onClick={() =>
+                      auth.isAuthenticated()
+                        ? navigate(`/experts/${expert.id}/chats`)
+                        : navigate('/login')
+                    }
                   >
                     <Phone />
                     Mulai Call
@@ -128,7 +137,11 @@ const DetailExperts = (): JSX.Element => {
               {!expert.isAi && (
                 <Button
                   className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg hover:shadow-red-600/20 transition-all w-full sm:w-auto justify-center"
-                  onClick={() => setIsBookingModalOpen(true)}
+                  onClick={() =>
+                    auth.isAuthenticated()
+                      ? setIsBookingModalOpen(true)
+                      : navigate('/login')
+                  }
                 >
                   <Calendar />
                   Booking Sesi

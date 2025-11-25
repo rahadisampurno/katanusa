@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLoaderData, useNavigate } from 'react-router';
 import { v1 } from 'uuid';
+import useChatActions from '../../pages/Chat/hooks/useChatActions';
 import useExpertChatStore from '../../pages/Chat/hooks/useExpertChatStore.ts';
 import useExpertTalk from '../../pages/Chat/hooks/useExpertTalk.ts';
 import useExpertTalkStore, {
@@ -19,6 +20,7 @@ const ChatWindow: React.FC = () => {
   const { messages, setMessages, isLoading } = useExpertChatStore();
   const { callStatus, liveTranscript } = useExpertTalkStore();
   const { startCall, endCall } = useExpertTalk(expert);
+  const { sendMessage } = useChatActions(expert);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -40,12 +42,12 @@ const ChatWindow: React.FC = () => {
         },
       ]);
     }
-  }, [expert]);
+  }, [expert, setMessages]);
 
   // initial
   useEffect(() => {
     initialMessages();
-  }, [expert]);
+  }, [expert, initialMessages]);
 
   return (
     <div className="w-full max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl flex flex-col h-120 md:h-160">
@@ -79,6 +81,8 @@ const ChatWindow: React.FC = () => {
             key={msg.id}
             message={msg.text}
             isUser={msg.sender === 'user'}
+            additional={msg.additional}
+            onOptionClick={sendMessage}
           />
         ))}
 

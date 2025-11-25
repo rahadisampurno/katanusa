@@ -1,6 +1,8 @@
 import { Search, Filter } from 'lucide-react';
-import type { JSX } from 'react';
+import { useCallback, useEffect, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { useDebounce } from 'use-debounce';
 import ExpertImage from '../../components/experts/ExpertImage.tsx';
 import Footer from '../../components/layout/Footer.tsx';
 import Navbar from '../../components/layout/Navbar';
@@ -8,6 +10,37 @@ import { experts } from '../../data/experts.ts';
 
 const BrowseExpertsPage = (): JSX.Element => {
   const navigate = useNavigate();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredExperts, setFilteredExperts] = useState(experts);
+
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 500);
+
+  const handleSearch = useCallback(() => {
+    if (debouncedSearchQuery) {
+      const filtered = experts.filter((expert) => {
+        return (
+          expert.name
+            .toLowerCase()
+            .includes(debouncedSearchQuery.toLowerCase()) ||
+          expert.role.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+        );
+      });
+      setFilteredExperts(filtered);
+    } else {
+      setFilteredExperts(experts);
+    }
+  }, [debouncedSearchQuery]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    handleSearch();
+  }, [debouncedSearchQuery]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section with different styling than Home */}
@@ -35,6 +68,7 @@ const BrowseExpertsPage = (): JSX.Element => {
               type="text"
               placeholder="Cari berdasarkan nama, keahlian atau bidang"
               className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
@@ -56,7 +90,8 @@ const BrowseExpertsPage = (): JSX.Element => {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-6">
           <p className="text-gray-600">
-            Menampilkan 10 Pakar dari {experts.length} pakar.
+            Menampilkan {filteredExperts.length} Pakar dari {experts.length}{' '}
+            pakar.
           </p>
           <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
             Urutkan:{' '}
@@ -65,7 +100,7 @@ const BrowseExpertsPage = (): JSX.Element => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {experts.map((expert) => (
+          {filteredExperts.map((expert) => (
             <ExpertImage
               key={expert.id}
               alt={expert.name}

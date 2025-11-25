@@ -1,12 +1,8 @@
-import dayjs from 'dayjs';
 import { Send } from 'lucide-react';
 import type { ChangeEvent, JSX } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useLoaderData } from 'react-router';
-import { v1 } from 'uuid';
-import gemini from '../../libs/gemini.ts';
-import useExpertChatStore from '../../pages/Chat/hooks/useExpertChatStore.ts';
-import type { ChatMessage } from '../../types/chat.ts';
+import useChatActions from '../../pages/Chat/hooks/useChatActions';
 
 type ChatInputForm = {
   userInput: string;
@@ -14,14 +10,7 @@ type ChatInputForm = {
 
 const ChatInput = (): JSX.Element => {
   const { data: expert } = useLoaderData();
-
-  const {
-    messages,
-    isLoading,
-
-    setMessages,
-    setIsLoading,
-  } = useExpertChatStore();
+  const { sendMessage, isLoading } = useChatActions(expert);
 
   const { handleSubmit, control, resetField } = useForm<ChatInputForm>({
     defaultValues: {
@@ -33,60 +22,8 @@ const ChatInput = (): JSX.Element => {
     const trimmedInput = value.userInput.trim();
     if (!trimmedInput || isLoading) return;
 
-    const newMessages: ChatMessage[] = [
-      ...messages,
-      {
-        sender: 'user',
-        text: trimmedInput,
-        id: v1(),
-        timestamp: dayjs().format(),
-      },
-    ];
-
-    setMessages(newMessages);
     resetField('userInput');
-    setIsLoading(true);
-
-    try {
-      const aiResponse = await gemini.getAiResponse({
-        expert,
-        userMessage: trimmedInput,
-        chatHistory: messages,
-      });
-      if (!aiResponse) {
-        setMessages([
-          ...newMessages,
-          {
-            sender: 'ai',
-            text: 'Maaf, terjadi kesalahan. Coba lagi nanti.',
-            id: v1(),
-            timestamp: dayjs().format(),
-          },
-        ]);
-        return;
-      }
-      setMessages([
-        ...newMessages,
-        {
-          sender: 'ai',
-          text: aiResponse,
-          id: v1(),
-          timestamp: dayjs().format(),
-        },
-      ]);
-    } catch {
-      setMessages([
-        ...newMessages,
-        {
-          sender: 'ai',
-          text: 'Maaf, terjadi kesalahan. Coba lagi nanti.',
-          id: v1(),
-          timestamp: dayjs().format(),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+    await sendMessage(trimmedInput);
   };
 
   return (

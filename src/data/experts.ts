@@ -1,71 +1,7 @@
 import type { Expert } from '../types/expert.ts';
 
 export const experts: Expert[] = [
-  {
-    id: 'ad6d1a13-62fb-4688-839f-146b950bf1fb',
-    name: 'Dr. Hawe Setiawan',
-    role: 'Budayawan dan penulis, ahli sastra Sunda & kajian budaya.',
-    image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/pak-hawe.png',
-    specialties: [
-      'Bahasa Sunda',
-      'Kebudayaan Sunda',
-      'Kuliner Sunda',
-      'Pariwisata Jawa Barat dan Banten',
-      'Sejarah Sunda',
-    ],
-    gender: 'pria',
-    isAi: false,
-  },
-  {
-    id: 'b86a4b79-f7f9-46ec-b276-2461113e2e14',
-    name: 'Prof. Juhaeri Muchtar',
-    role: 'Statistik, diaspora Sunda, advokasi budaya',
-    image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/prof-juhaeri-muchtar.png',
-    specialties: [
-      'Bahasa Sunda',
-      'Kebudayaan Sunda',
-      'Kuliner Sunda',
-      'Pariwisata Jawa Barat dan Banten',
-      'Sejarah Sunda',
-    ],
-    gender: 'pria',
-    isAi: false,
-  },
-  {
-    id: '010c4146-2cb2-42cf-860e-cb016e30dd21',
-    name: 'Sujiwo Tejo',
-    role: 'Seni Pedalangan (Wayang), Musik, dan Seni Peran.',
-    image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/sujiwo-tejo.png',
-    specialties: [
-      'Bahasa Jawa',
-      'Kebudayaan Jawa',
-      'Pedalangan dan Wayang Jawa',
-      'Musik Tradisional Jawa',
-      'Sejarah Jawa',
-    ],
-    bio: 'Sujiwo Tejo adalah seniman Indonesia yang dikenal sebagai penjaga ruh kebudayaan Nusantara melalui karya-karya lintas medium seperti wayang, musik, sastra, hingga lukisan. Dengan kecerdasan artistik yang khas, ia meramu kritik sosial, falsafah hidup, dan humor menjadi bahasa seni yang mempersatukan tradisi dengan zaman modern. Sosoknya hadir sebagai jembatan antara kearifan leluhur dan realitas kontemporer, menjadikan Sujiwo Tejo bukan sekadar seniman, tetapi juga penggerak yang terus menghidupkan identitas budaya bangsa.',
-    gender: 'pria',
-    isAi: false,
-  },
-  {
-    id: 'fb20c08c-7997-4dd0-b77f-ed083b059c10',
-    name: 'Didin S. Damanhuri',
-    role: 'Tradisi Sunda, Islam & adat, kajian kearifan lokal',
-    image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/didin-s-damanhuri.png',
-    specialties: [
-      'Bahasa Sunda',
-      'Kebudayaan Sunda',
-      'Kuliner Sunda',
-      'Pariwisata Jawa Barat dan Banten',
-      'Sejarah Sunda',
-    ],
-    gender: 'pria',
-    isAi: false,
-  },
+  
   {
     id: '558e9e41-1046-4a6c-bedb-e5f05da25212',
     name: 'Ambu Pangeusi',
@@ -82,7 +18,24 @@ export const experts: Expert[] = [
     ],
     gender: 'wanita',
     isAi: true,
-    sources: ['https://bandungbergerak.id/writer/906/hawe-setiawan'],
+    realExpertReferences: [
+      {
+        id: 'ad6d1a13-62fb-4688-839f-146b950bf1fb',
+        name: 'Dr. Hawe Setiawan',
+        role: 'Budayawan dan penulis, ahli sastra Sunda & kajian budaya.',
+        image:
+          'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/pak-hawe.png',
+        specialties: [
+          'Bahasa Sunda',
+          'Kebudayaan Sunda',
+          'Kuliner Sunda',
+          'Pariwisata Jawa Barat dan Banten',
+          'Sejarah Sunda',
+        ],
+        gender: 'pria',
+        isAi: false,
+      },
+    ],
   },
   {
     id: '12490118-d3f7-49bc-9cf0-382be0e328fa',
@@ -149,6 +102,72 @@ export const experts: Expert[] = [
     specialties: [],
     gender: 'wanita',
     isAi: true,
+  },
+  {
+    id: 'ad6d1a13-62fb-4688-839f-146b950bf1fb',
+    name: 'Dr. Hawe Setiawan',
+    role: 'Budayawan dan penulis, ahli sastra Sunda & kajian budaya.',
+    image:
+      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/pak-hawe.png',
+    specialties: [
+      'Bahasa Sunda',
+      'Kebudayaan Sunda',
+      'Kuliner Sunda',
+      'Pariwisata Jawa Barat dan Banten',
+      'Sejarah Sunda',
+    ],
+    gender: 'pria',
+    isAi: false,
+    articles: ['https://bandungbergerak.id/writer/906/hawe-setiawan'],
+  },
+  {
+    id: 'b86a4b79-f7f9-46ec-b276-2461113e2e14',
+    name: 'Prof. Juhaeri Muchtar',
+    role: 'Statistik, diaspora Sunda, advokasi budaya',
+    image:
+      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/prof-juhaeri-muchtar.png',
+    specialties: [
+      'Bahasa Sunda',
+      'Kebudayaan Sunda',
+      'Kuliner Sunda',
+      'Pariwisata Jawa Barat dan Banten',
+      'Sejarah Sunda',
+    ],
+    gender: 'pria',
+    isAi: false,
+  },
+  {
+    id: '010c4146-2cb2-42cf-860e-cb016e30dd21',
+    name: 'Sujiwo Tejo',
+    role: 'Seni Pedalangan (Wayang), Musik, dan Seni Peran.',
+    image:
+      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/sujiwo-tejo.png',
+    specialties: [
+      'Bahasa Jawa',
+      'Kebudayaan Jawa',
+      'Pedalangan dan Wayang Jawa',
+      'Musik Tradisional Jawa',
+      'Sejarah Jawa',
+    ],
+    bio: 'Sujiwo Tejo adalah seniman Indonesia yang dikenal sebagai penjaga ruh kebudayaan Nusantara melalui karya-karya lintas medium seperti wayang, musik, sastra, hingga lukisan. Dengan kecerdasan artistik yang khas, ia meramu kritik sosial, falsafah hidup, dan humor menjadi bahasa seni yang mempersatukan tradisi dengan zaman modern. Sosoknya hadir sebagai jembatan antara kearifan leluhur dan realitas kontemporer, menjadikan Sujiwo Tejo bukan sekadar seniman, tetapi juga penggerak yang terus menghidupkan identitas budaya bangsa.',
+    gender: 'pria',
+    isAi: false,
+  },
+  {
+    id: 'fb20c08c-7997-4dd0-b77f-ed083b059c10',
+    name: 'Didin S. Damanhuri',
+    role: 'Tradisi Sunda, Islam & adat, kajian kearifan lokal',
+    image:
+      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/didin-s-damanhuri.png',
+    specialties: [
+      'Bahasa Sunda',
+      'Kebudayaan Sunda',
+      'Kuliner Sunda',
+      'Pariwisata Jawa Barat dan Banten',
+      'Sejarah Sunda',
+    ],
+    gender: 'pria',
+    isAi: false,
   },
   // {
   //   id: 'ac2f5fdb-0a11-4c1b-b486-af2af0ade2f3',

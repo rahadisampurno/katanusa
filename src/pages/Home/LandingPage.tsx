@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import ExpertImage from '../../components/experts/ExpertImage';
 import Footer from '../../components/layout/Footer';
 import Navbar from '../../components/layout/Navbar';
@@ -14,37 +14,46 @@ const LandingPage = (): JSX.Element => {
 
   return (
     <main className="bg-[#1E315A]">
-      <section className="relative min-h-screen bg-white bg-cover bg-center bg-no-repeat bg-[url('https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-utama.webp')] overflow-hidden">
+      <section className="relative min-h-screen bg-transparent overflow-hidden">
         <Navbar />
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-[40vh] text-center px-4 pt-24 pb-12">
-          <h1 className="text-3xl md:text-5xl font-itim max-w-4xl leading-tight mb-6 text-black">
-            Jelajahi Kekayaan Budaya Indonesia, Semudah Mengirim Pesan.
-          </h1>
+        <img
+          alt="bg-utama"
+          src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-utama.webp"
+          className="w-full h-full object-cover hidden md:block"
+        />
+        <div className="absolute z-5 top-0 left-0 right-0 bottom-0">
+          <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 md:px-0 pb-12">
+            <h1 className="text-3xl md:text-5xl font-itim max-w-4xl leading-tight mb-6 text-white md:text-black">
+              Jelajahi Kekayaan Budaya Indonesia, Semudah Mengirim Pesan.
+            </h1>
 
-          <p className="text-black text-lg max-w-2xl mb-10 leading-relaxed">
-            Tanya jawab seputar budaya Indonesia secara valid dengan AI Pakar
-            Budaya, atau konsultasi langsung dengan Pakar Budaya asli.
-          </p>
+            <p className="text-white md:text-black text-lg max-w-2xl mb-10 leading-relaxed">
+              Tanya jawab seputar budaya Indonesia secara valid dengan AI Pakar
+              Budaya, atau konsultasi langsung dengan Pakar Budaya asli.
+            </p>
 
-          <div className="flex justify-between gap-3 items-center">
-            <Button
-              type="button"
-              onClick={() => navigate('/experts')}
-              variant="primary"
-              className="text-lg px-8 py-3 shadow-xl hover:scale-105 transform"
-            >
-              Jelajahi Pakar Budaya
-            </Button>
+            <div className="flex justify-between gap-3 items-center">
+              <Button
+                type="button"
+                onClick={() => navigate('/experts')}
+                variant="primary"
+                className="text-lg px-8 py-3 shadow-xl hover:scale-105 transform"
+              >
+                Jelajahi Pakar Budaya
+              </Button>
+            </div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-[13.6875rem] bg-gradient-to-b from-transparent to-[#1E315A]"></div>
+
+        <div className="absolute top-0 left-0 right-0 h-0 md:h-54.75 bg-linear-to-b from-white to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-0 md:h-54.75 bg-linear-to-b from-transparent to-[#1E315A]"></div>
       </section>
       {/* kenapa-harus-katanusa? */}
       <section className="relative min-h-[50vh] bg-[#1E315A] overflow-hidden">
         <img
           alt="bg-why-katanusa"
           src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-why-katanusa.png"
-          className="w-[48.75rem] object-contain absolute bottom-0 left-0"
+          className="w-195 object-contain relative md:absolute md:bottom-0 md:left-0"
         />
         <div className="flex flex-col md:flex-row justify-between min-h-[50vh] relative z-10">
           <div className="flex-1 flex flex-col items-center justify-start md:justify-between px-4 md:px-0">
@@ -183,13 +192,13 @@ const LandingPage = (): JSX.Element => {
       {/* belajar-langsung-dari-pakarnya */}
       {/* gabung-sebagai-mitra  */}
       <section className="relative min-h-[50vh] bg-[#132346] flex justify-center items-center pb-12">
-        <a href="#" className="cursor-pointer">
+        <Link to="/signup" className="cursor-pointer">
           <img
             alt="join-as-partner"
             src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-join-as-partner.webp"
             className="block w-full h-72 object-contain"
           />
-        </a>
+        </Link>
       </section>
       {/* gabung-sebagai-mitra */}
       <Footer />

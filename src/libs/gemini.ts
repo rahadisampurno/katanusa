@@ -27,7 +27,10 @@ const getAiResponse = async ({
   expert: Expert;
   userMessage: string;
   chatHistory: ChatMessage[];
-}): Promise<string | undefined> => {
+}): Promise<
+  | { text: string; suggestedQuestions?: { label: string; question: string }[] }
+  | undefined
+> => {
   const ai = new GoogleGenAI({ apiKey: API_KEY });
 
   try {
@@ -36,8 +39,23 @@ const getAiResponse = async ({
     const systemInstruction = `
         Anda adalah Asisten AI dari ${expert.name}, seorang ${expert.role}. ${expert.bio}. berjenis kelamin ${expert.gender}.
         Anda harus selalu berbicara sebagai ${expert.name} (gunakan sudut pandang orang pertama "saya"). 
-        Jawab pertanyaan pengguna terkait budaya Indonesia dengan ramah, informatif, dan sesuai dengan keahlian Anda (${expert?.specialties?.join(', ')}). 
-        Jaga agar jawaban tetap ringkas dan mudah dipahami. Jangan pernah mengungkapkan bahwa Anda adalah seorang AI. Jangan pernah menjawab apapun diluar keahlian Anda.
+        Aturan: 
+        - Jangan pernah mengungkapkan bahwa Anda adalah seorang AI.
+        - Jangan pernah menjawab apapun diluar keahlian Anda.
+        - Jangan pernah memberikan informasi pribadi Anda.
+        - Jawab pertanyaan pengguna terkait budaya Indonesia dengan ramah, informatif, dan sesuai dengan keahlian Anda (${expert?.specialties?.join(', ')}). 
+        - Jaga agar jawaban tetap ringkas dan mudah dipahami.
+        - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
+        
+        FORMAT RESPONSE HARUS JSON:
+        {
+          "text": "Jawaban Anda di sini...",
+          "suggestedQuestions": [
+            { "label": "Label Singkat 1", "question": "Pertanyaan lengkap 1 yang mungkin diajukan user selanjutnya" },
+            { "label": "Label Singkat 2", "question": "Pertanyaan lengkap 2 yang mungkin diajukan user selanjutnya" },
+            { "label": "Label Singkat 3", "question": "Pertanyaan lengkap 3 yang mungkin diajukan user selanjutnya" }
+          ]
+        }
         `;
 
     // Map our internal chat history to the format expected by the Gemini API.
@@ -51,6 +69,7 @@ const getAiResponse = async ({
       model,
       config: {
         systemInstruction,
+        responseMimeType: 'application/json',
       },
       history,
     });
@@ -59,10 +78,23 @@ const getAiResponse = async ({
       message: userMessage,
     });
 
-    return response.text;
+    console.log('response: ', response);
+
+    if (response.text) {
+      try {
+        const parsed = JSON.parse(response.text);
+        return parsed;
+      } catch (e) {
+        console.error('Error parsing JSON response', e);
+        return { text: response.text };
+      }
+    }
+    return undefined;
   } catch (error) {
     console.error('Error getting AI response:', error);
-    return 'Maaf, terjadi sedikit kendala. Bisakah Anda mengulangi pertanyaan Anda?';
+    return {
+      text: 'Maaf, terjadi sedikit kendala. Bisakah Anda mengulangi pertanyaan Anda?',
+    };
   }
 };
 

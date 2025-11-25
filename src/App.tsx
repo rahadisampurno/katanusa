@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
+import BookingHistory from './pages/Booking/BookingHistory';
 import ExpertChatPage from './pages/Chat/ExpertChatPage';
 import expertChatPageLoader from './pages/Chat/ExpertChatPage.loader.ts';
 import BrowseExperts from './pages/Experts/BrowseExperts';
@@ -13,6 +14,10 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingPage />,
+  },
+  {
+    path: '/booking-history',
+    element: <BookingHistory />,
   },
   {
     path: '/login',

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import auth from '../../libs/auth';
 import { cn } from '../../libs/utils';
 // @ts-expect-error - SVG import
 import LogoKataNusaWhite from '../svgs/logo-katanusa-white.svg?react';
 // @ts-expect-error - SVG import
 import LogoKataNusa from '../svgs/logo-katanusa.svg?react';
 import Button from '../ui/Button';
+import AuthenticatedButton from './AuthenticatedButton';
 
 interface NavbarProps {
   isWhite?: boolean;
@@ -76,18 +78,24 @@ const Navbar: React.FC<NavbarProps> = ({ isWhite = false }) => {
 
         {/* Auth Buttons Desktop */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link to="/login" className="hover:text-gray-300 font-medium">
-            Masuk
-          </Link>
-          <Button
-            variant="outline"
-            className={cn('px-6 py-1.5 border-black/50 text-black', {
-              'text-white border-white': isWhite,
-            })}
-            onClick={() => navigate('/signup')}
-          >
-            Daftar
-          </Button>
+          {auth.isAuthenticated() ? (
+            <AuthenticatedButton />
+          ) : (
+            <>
+              <Link to="/login" className="hover:text-gray-300 font-medium">
+                Masuk
+              </Link>
+              <Button
+                variant="outline"
+                className={cn('px-6 py-1.5 border-black/50 text-black', {
+                  'text-white border-white': isWhite,
+                })}
+                onClick={() => navigate('/signup')}
+              >
+                Daftar
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </nav>

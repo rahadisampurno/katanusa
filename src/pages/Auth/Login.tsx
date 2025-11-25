@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router';
 // @ts-expect-error - SVG import
 import LogoKataNusaWhite from '../../components/svgs/logo-katanusa-white.svg?react';
 import Button from '../../components/ui/Button';
+import auth from '../../libs/auth';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -29,8 +30,52 @@ const Login: React.FC = () => {
     // Mock API call
     setTimeout(() => {
       setIsLoading(false);
-      // Mock success
-      navigate('/');
+
+      switch (email) {
+        case 'dena@katanusa.com':
+          auth.setUserData({
+            email: 'dena@katanusa.com',
+            name: 'Dena Hardianto',
+          });
+          auth.setAccessToken('mock-token');
+          navigate('/');
+          break;
+        case 'rahadi@katanusa.com':
+          auth.setUserData({
+            email: 'rahadi@katanusa.com',
+            name: 'Rahadi Sampurno',
+          });
+          auth.setAccessToken('mock-token');
+          navigate('/');
+          break;
+        case 'rahma@katanusa.com':
+          auth.setUserData({
+            email: 'rahma@katanusa.com',
+            name: 'Anisa Rahma',
+          });
+          auth.setAccessToken('mock-token');
+          navigate('/');
+          break;
+        case 'danu@katanusa.com':
+          auth.setUserData({
+            email: 'danu@katanusa.com',
+            name: 'Danu Ega Pratama',
+          });
+          auth.setAccessToken('mock-token');
+          navigate('/');
+          break;
+        case 'agung@katanusa.com':
+          auth.setUserData({
+            email: 'agung@katanusa.com',
+            name: 'M Agung Rizkyana',
+          });
+          auth.setAccessToken('mock-token');
+          navigate('/');
+          break;
+        default:
+          alert('Email tidak terdaftar');
+          break;
+      }
     }, 1500);
   };
 

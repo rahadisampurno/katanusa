@@ -20,5 +20,6 @@ export interface Expert {
   experience?: string;
   gender: 'pria' | 'wanita';
   isAi?: boolean;
-  sources?: string[];
+  articles?: string[];
+  realExpertReferences?: Expert[];
 }
