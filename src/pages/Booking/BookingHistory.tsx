@@ -20,10 +20,12 @@ const mockBookings: Booking[] = [
   },
   {
     id: '2',
-    expertId: experts.find((e) => e.name === 'Dr. Hawe Setiawan')?.id || 'expert-2',
+    expertId:
+      experts.find((e) => e.name === 'Dr. Hawe Setiawan')?.id || 'expert-2',
     expertName: 'Dr. Hawe Setiawan',
     expertRole: 'Budayawan dan penulis, ahli sastra Sunda & kajian budaya.',
-    expertImage: experts.find((e) => e.name === 'Dr. Hawe Setiawan')?.image || '',
+    expertImage:
+      experts.find((e) => e.name === 'Dr. Hawe Setiawan')?.image || '',
     topic: 'Kajian budaya sunda',
     date: 'Hari ini, 22 Nov 2025',
     time: '16:00 - 17:00 WIB',
@@ -42,7 +44,9 @@ const BookingCard: React.FC<{ booking: Booking }> = ({ booking }) => {
           className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-2 border-white/10"
         />
         <div className="text-center md:text-left">
-          <h3 className="text-white font-bold text-lg md:text-xl font-sans">{booking.expertName}</h3>
+          <h3 className="text-white font-bold text-lg md:text-xl font-sans">
+            {booking.expertName}
+          </h3>
           <p className="text-gray-300 text-sm max-w-xs">{booking.expertRole}</p>
         </div>
       </div>
@@ -78,7 +82,9 @@ const BookingCard: React.FC<{ booking: Booking }> = ({ booking }) => {
 };
 
 const BookingHistory: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'active' | 'history' | 'pending'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'history' | 'pending'>(
+    'active',
+  );
 
   const tabs = [
     { id: 'active', label: 'Aktif/Yang Akan Datang' },
@@ -89,9 +95,11 @@ const BookingHistory: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0B1221] flex flex-col">
       <Navbar isWhite />
-      
+
       <main className="grow container mx-auto px-4 py-8 md:py-12 mt-20">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-8 font-sans">Booking Sesi Saya</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-8 font-sans">
+          Booking Sesi Saya
+        </h1>
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-6 md:gap-8 border-b border-white/10 mb-8">
@@ -122,7 +130,7 @@ const BookingHistory: React.FC = () => {
               ))}
             </>
           )}
-          
+
           {activeTab === 'history' && (
             <div className="text-center py-12 text-gray-400">
               Belum ada riwayat sesi.

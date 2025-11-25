@@ -31,6 +31,11 @@ const Login: React.FC = () => {
     setTimeout(() => {
       setIsLoading(false);
 
+      if (password !== 'bismillahjuara1') {
+        alert('Password salah');
+        return;
+      }
+
       switch (email) {
         case 'dena@katanusa.com':
           auth.setUserData({
@@ -68,6 +73,14 @@ const Login: React.FC = () => {
           auth.setUserData({
             email: 'agung@katanusa.com',
             name: 'M Agung Rizkyana',
+          });
+          auth.setAccessToken('mock-token');
+          navigate('/');
+          break;
+        case 'budayago@katanusa.com':
+          auth.setUserData({
+            email: 'budayago@katanusa.com',
+            name: 'BudayaGo',
           });
           auth.setAccessToken('mock-token');
           navigate('/');

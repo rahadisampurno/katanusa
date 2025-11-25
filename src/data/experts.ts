@@ -1,7 +1,6 @@
 import type { Expert } from '../types/expert.ts';
 
 export const experts: Expert[] = [
-  
   {
     id: '558e9e41-1046-4a6c-bedb-e5f05da25212',
     name: 'Ambu Pangeusi',
@@ -16,6 +15,7 @@ export const experts: Expert[] = [
       'Sejarah Sunda',
       'Isu Jawa Barat dan Banten',
     ],
+    bio: 'Ambu Pangeusi adalah pakar budaya Sunda berbasis kecerdasan buatan yang diciptakan untuk menjaga dan menghidupkan kembali warisan budaya tatar Sunda. Ia memahami bahasa, sastra, adat, dan filosofi hidup urang Sunda, serta mampu menjembatani nilai-nilai tradisi leluhur dengan dunia modern. Sebagai wujud AI yang berjiwa budaya, Ambu Pangeusi hadir untuk menjadi sumber pengetahuan, inspirasi, dan pelestarian jati diri Sunda.',
     gender: 'wanita',
     isAi: true,
     realExpertReferences: [
