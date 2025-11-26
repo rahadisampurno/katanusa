@@ -55,7 +55,15 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Jawa',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/ki-waskita.png',
-    specialties: [],
+    specialties: [
+      'Bahasa Jawa',
+      'Adat Jawa',
+      'Wayang',
+      'Sastra Jawa',
+      'Filosofi Kejawen',
+    ],
+    bio:
+      'Ki Waskita adalah AI yang merangkum tradisi Jawa: bahasa dan sastra, seni wayang, serta falsafah kejawen. Tuturannya berimbang antara etika adat, kebijaksanaan lokal, dan praktik budaya masa kini.',
     gender: 'pria',
     isAi: true,
     suku: 'Jawa',
@@ -66,7 +74,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Batak',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/oppung-hasian.png',
-    specialties: [],
+    specialties: ['Adat Batak', 'Ulos', 'Gondang', 'Upacara Adat'],
+    bio:
+      'Oppung Hasian adalah AI yang memaparkan adat Batak: filosofi ulos, musik gondang, sistem kekerabatan, dan upacara adat. Penjelasannya menekankan gotong royong dan martabat keluarga.',
     gender: 'pria',
     isAi: true,
     suku: 'Batak',
@@ -77,7 +87,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Madura',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/ra-tretan.webp',
-    specialties: [],
+    specialties: ['Adat Madura', 'Karapan Sapi', 'Sastra Lisan', 'Kuliner Madura'],
+    bio:
+      'Ra Tretan adalah AI yang menjelaskan adat dan seni lisan Madura, tradisi karapan sapi, serta kuliner khas. Gaya bahasanya tegas dan bersahaja, mencerminkan karakter budaya Madura.',
     gender: 'wanita',
     isAi: true,
     suku: 'Madura',
@@ -88,7 +100,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Betawi',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/encang-jago.png',
-    specialties: [],
+    specialties: ['Lenong', 'Ondel-ondel', 'Gambang Kromong', 'Kuliner Betawi'],
+    bio:
+      'Encang Jago adalah AI Betawi yang mengulas lenong, ondel-ondel, gambang kromong, hingga kuliner khas. Narasinya akrab dan ringan, mencerminkan keramahan budaya Betawi.',
     gender: 'pria',
     isAi: true,
     suku: 'Betawi',
@@ -99,7 +113,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Minangkabau',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/bundo-cadiak.webp',
-    specialties: [],
+    specialties: ['Adat Minangkabau', 'Matrilineal', 'Randai', 'Silek', 'Kuliner Minang'],
+    bio:
+      'Bundo Cadiak adalah AI yang memaparkan falsafah adat basandi syarak, sistem matrilineal, seni randai dan silek, serta kekayaan kuliner Minangkabau dengan bahasa yang hangat dan berimbang.',
     gender: 'wanita',
     isAi: true,
     suku: 'Minangkabau',
@@ -110,7 +126,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Bugis',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/datu-lontara.webp',
-    specialties: [],
+    specialties: ['Aksara Lontara', "Siri' na Pacce", 'Pinisi', 'Adat Bugis', 'Pelayaran'],
+    bio:
+      "Datu Lontara adalah AI yang mengulas warisan Bugis: aksara Lontara, etos siri' na pacce, pelayaran dan perahu pinisi, dengan penekanan pada martabat dan solidaritas.",
     gender: 'wanita',
     isAi: true,
     suku: 'Bugis',
@@ -128,6 +146,7 @@ export const experts: Expert[] = [
       'Pariwisata Jawa Barat dan Banten',
       'Sejarah Sunda',
     ],
+    bio :'Dr. Hawe Setiawan memainkan peran penting dalam pelestarian budaya Sunda melalui tulisan, penelitian, dan pengajaran. Ia menggunakan bahasa dan sastra Sunda sebagai medium utama untuk menjaga relevansi budaya Sunda di tengah perubahan zaman, dengan keyakinan bahwa bahasa adalah kunci pelestarian nilai-nilai etos, etika, dan filsafat Sunda yang mulai terkikis di masyarakat modern.',
     gender: 'pria',
     isAi: false,
     articles: ['https://bandungbergerak.id/writer/906/hawe-setiawan'],
@@ -146,6 +165,7 @@ export const experts: Expert[] = [
       'Pariwisata Jawa Barat dan Banten',
       'Sejarah Sunda',
     ],
+    bio:'Prof. Juhaeri Muchtar dikenal sebagai epidemiolog dan ahli statistika, namun perannya dalam pelestarian budaya lebih bersifat inspiratif dan pendidikan melalui karya-karyanya yang menekankan pentingnya sastra dan nilai-nilai lokal dalam pembangunan bangsa. Ia menulis buku berjudul “Statistics of Dreams: Sebuah Memoar” yang tidak hanya membahas statistika, tetapi juga mengandung nilai-nilai kehidupan dan kearifan lokal, serta dijadikan sumber inspirasi bagi generasi muda, khususnya mahasiswa IPB University.​ Kontribusi dalam Pelestarian Budaya Juhaeri Muchtar menekankan bahwa kemajuan Indonesia tidak hanya ditentukan oleh sains dan teknologi, tetapi juga oleh sastra dan budaya, sehingga ia mendorong integrasi nilai-nilai budaya dalam pendidikan dan pengembangan masyarakat.​ Buku dan karyanya dijadikan sebagai sarana untuk menginspirasi dan memotivasi anak-anak muda agar menghargai dan melestarikan budaya serta tradisi lokal.​Sebagai putra daerah Sunda, ia turut membawa nilai-nilai lokal ke kancah internasional, sehingga ikut memperkenalkan budaya Indonesia di luar negeri.​ Peran Prof. Juhaeri Muchtar dalam pelestarian budaya lebih menekankan pada aspek edukatif dan inspiratif, dengan mengintegrasikan nilai-nilai lokal dan budaya ke dalam karya-karya ilmiah serta aktivitas pendidikan yang dapat menginspirasi generasi muda untuk menjaga dan melestarikan budaya Indonesia.',
     gender: 'pria',
     isAi: false,
     suku: 'Sunda',
@@ -181,6 +201,7 @@ export const experts: Expert[] = [
       'Pariwisata Jawa Barat dan Banten',
       'Sejarah Sunda',
     ],
+    bio:'Didin S. Damanhuri berperan penting dalam pelestarian budaya melalui pendekatan ekonomi dan kebudayaan yang berbasis nilai-nilai lokal, terutama dengan menggagas konsep Nusantaranomics. Ia menekankan pentingnya membangun sistem ekonomi yang tidak hanya mengandalkan teori Barat, tetapi juga memadukan kearifan lokal, tradisi, dan budaya etnis sebagai fondasi pembangunan Indonesia yang berkelanjutan. Peran dalam Pelestarian Budaya Didin S. Damanhuri aktif menyuarakan perlunya strategi kebudayaan yang berbasis nilai lokal, agar masyarakat Indonesia tidak hanya menjadi pengikut paradigma Barat, tetapi juga mampu mengembangkan identitas budaya sendiri.​ Ia mengkritik jebakan epistemologi, yaitu ketergantungan pada paradigma luar tanpa adaptasi terhadap kebutuhan dan nilai lokal, serta menyerukan transformasi ilmu pengetahuan yang memprioritaskan kesejahteraan rakyat dan keberlanjutan budaya.​ Melalui gagasan Nusantaranomics, Didin mendorong revitalisasi ekonomi yang berakar pada tradisi, budaya, dan semangat agama, sehingga budaya lokal tidak terpinggirkan dalam proses pembangunan',
     gender: 'pria',
     isAi: false,
     suku: 'Sunda',
@@ -221,7 +242,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Borneo',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/panglima-borneo.webp',
-    specialties: [],
+    specialties: ['Adat Dayak', 'Rumah Panjang', 'Seni Ukir', 'Konservasi Hutan'],
+    bio:
+      'Panglima Borneo adalah AI yang menuturkan adat Dayak, rumah panjang, seni ukir, dan filosofi hidup selaras hutan. Narasi menekankan kelestarian alam sebagai inti kebudayaan.',
     gender: 'pria',
     isAi: true,
     suku: 'Borneo',
@@ -242,7 +265,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Tionghoa',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/kongco-kasenian.webp',
-    specialties: [],
+    specialties: ['Adat Tionghoa', 'Seni Pertunjukan', 'Arsitektur', 'Festival', 'Kuliner'],
+    bio:
+      'Kongco Kesenian adalah AI yang menerangkan adat Tionghoa, seni pertunjukan, arsitektur, dan festival tradisional—menghubungkan nilai leluhur dengan kehidupan modern secara proporsional.',
     gender: 'pria',
     isAi: true,
     suku: 'Tionghoa',
@@ -273,7 +298,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Lampung',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/penyimbang-sai.png',
-    specialties: [],
+    specialties: ['Adat Lampung', 'Siger', 'Tandu', 'Upacara Adat'],
+    bio:
+      'Penyimbang Sai adalah AI yang menjelaskan adat Lampung, simbol siger, prosesi tandu, dan upacara adat. Penekanan pada tata nilai keluarga dan penghormatan leluhur.',
     gender: 'pria',
     isAi: true,
     suku: 'Lampung',
@@ -284,7 +311,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Gorontalo',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/opu-motololo.webp',
-    specialties: [],
+    specialties: ['Adat Gorontalo', 'Musik Tradisional', 'Simbol Budaya', 'Tata Nilai'],
+    bio:
+      'Opu Motololo adalah AI yang menjelaskan adat Gorontalo, tata nilai lokal, musik tradisional, dan simbol-simbol budaya dengan bahasa yang santun dan mudah dipahami.',
     gender: 'pria',
     isAi: true,
     suku: 'Gorontalo',
@@ -305,7 +334,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Nias',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/si-ula-faulu.png',
-    specialties: [],
+    specialties: ['Adat Nias', 'Lompat Batu', 'Ukiran', 'Arsitektur'],
+    bio:
+      "Si Ulu Fa'ulu adalah AI yang mengulas adat Nias, tradisi lompat batu, dan seni ukiran—menyoroti ketangguhan komunitas pulau serta ikatan sosialnya.",
     gender: 'pria',
     isAi: true,
     suku: 'Nias',
@@ -316,7 +347,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Buton',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/lakina-kamali.webp',
-    specialties: [],
+    specialties: ['Adat Buton', 'Kesultanan Buton', 'Upacara Adat'],
+    bio:
+      'Lakina Kamali adalah AI yang menjelaskan sejarah dan adat Kesultanan Buton, prosesi adat, serta nilai kepemimpinan lokal yang menjaga harmoni masyarakat.',
     gender: 'pria',
     isAi: true,
     suku: 'Buton',
@@ -327,7 +360,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Atoni',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/nai-veto.webp',
-    specialties: [],
+    specialties: ['Adat Atoni', 'Tenun', 'Arsitektur Rumah'],
+    bio:
+      'Nai Feto adalah AI yang menuturkan adat Atoni, tradisi tenun, dan arsitektur rumah; menyoroti peran perempuan dalam budaya dan ekonomi rumah tangga.',
     gender: 'wanita',
     isAi: true,
     suku: 'Atoni',
@@ -348,7 +383,9 @@ export const experts: Expert[] = [
     role: 'Pakar Budaya Kaili',
     image:
       'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/magau-vunja.webp',
-    specialties: [],
+    specialties: ['Adat Kaili', 'Upacara Adat', 'Musik Tradisional'],
+    bio:
+      'Magau Vunja adalah AI yang menjelaskan adat Kaili, prosesi adat, dan musik tradisional dengan penekanan pada kebersamaan dan tata krama lokal.',
     gender: 'pria',
     isAi: true,
     suku: 'Kaili',
