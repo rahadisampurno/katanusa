@@ -22,4 +22,5 @@ export interface Expert {
   isAi?: boolean;
   articles?: string[];
   realExpertReferences?: Expert[];
+  suku?: string;
 }

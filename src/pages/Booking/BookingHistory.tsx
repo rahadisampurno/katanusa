@@ -17,6 +17,7 @@ const mockBookings: Booking[] = [
     date: 'Hari ini, 22 Nov 2025',
     time: '11:00 - 11:30 WIB',
     status: BookingStatus.ACTIVE,
+    url: 'https://meet.google.com/umm-txoz-cjg',
   },
   {
     id: '2',
@@ -31,6 +32,7 @@ const mockBookings: Booking[] = [
     time: '16:00 - 17:00 WIB',
     status: BookingStatus.ACTIVE,
     canReschedule: true,
+    url: 'https://meet.google.com/umm-txoz-cjg',
   },
 ];
 
@@ -68,7 +70,11 @@ const BookingCard: React.FC<{ booking: Booking }> = ({ booking }) => {
       </div>
 
       <div className="flex flex-col items-center md:items-end gap-2 w-full md:w-auto">
-        <button className="bg-[#D92D20] hover:bg-[#b9251b] text-white font-bold py-3 px-6 rounded-full transition-colors w-full md:w-auto">
+        <button
+          type="button"
+          onClick={() => window.open(booking.url, '_blank')}
+          className="bg-[#D92D20] hover:bg-[#b9251b] text-white font-bold py-3 px-6 rounded-full transition-colors w-full md:w-auto"
+        >
           Masuk Video Call
         </button>
         {booking.canReschedule && (

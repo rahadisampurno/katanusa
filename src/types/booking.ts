@@ -17,4 +17,5 @@ export interface Booking {
   time: string;
   status: BookingStatus;
   canReschedule?: boolean;
+  url: string;
 }
