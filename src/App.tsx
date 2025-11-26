@@ -9,6 +9,7 @@ import expertChatPageLoader from './pages/Chat/ExpertChatPage.loader.ts';
 import BrowseExperts from './pages/Experts/BrowseExperts';
 import DetailExperts from './pages/Experts/DetailExperts.tsx';
 import LandingPage from './pages/Home/LandingPage';
+import About from './pages/Home/About';
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
   {
     path: '/signup',
     element: <Signup />,
+  },
+  {
+    path: '/about',
+    element: <About />,
   },
   {
     path: '/experts',

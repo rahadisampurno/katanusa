@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import remarkGfm from 'remark-gfm';
 import { cn } from '../../libs/utils';
+import { User } from 'lucide-react';
 
 interface ChatBubbleProps {
   message: string;
@@ -18,6 +19,7 @@ interface ChatBubbleProps {
 const ChatBubble: React.FC<ChatBubbleProps> = ({
   message,
   isUser,
+  avatarUrl,
   additional,
   onOptionClick,
 }) => {
@@ -28,14 +30,25 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
         isUser ? 'flex-row-reverse' : 'flex-row',
       )}
     >
+      <div className="shrink-0 w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+        {isUser ? (
+          <User className="w-5 h-5 text-gray-600" />
+        ) : (
+          avatarUrl ? (
+            <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+          ) : (
+            <User className="w-5 h-5 text-gray-600" />
+          )
+        )}
+      </div>
       {/* Bubble */}
-      <div className="flex flex-col gap-2 max-w-[70%]">
+      <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[70%]">
         <div
           className={cn(
-            'p-4 rounded-2xl text-sm leading-relaxed shadow-sm',
+            'p-4 rounded-2xl text-sm leading-relaxed shadow-sm break-words',
             isUser
-              ? 'bg-blue-100 text-gray-800 rounded-tr-none'
-              : 'bg-white text-gray-800 rounded-tl-none',
+              ? 'bg-blue-100 text-gray-800 rounded-tr-none border border-blue-200'
+              : 'bg-white text-gray-800 rounded-tl-none border border-gray-200',
           )}
         >
           {message.split('\n').map((line, i) => (
