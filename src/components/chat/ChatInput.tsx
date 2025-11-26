@@ -29,7 +29,7 @@ const ChatInput = (): JSX.Element => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="bg-white p-4 rounded-b-3xl border-t border-gray-100"
+      className="bg-white p-4 rounded-b-3xl border-t border-gray-100 shadow-md"
     >
       <div className="relative">
         <Controller
@@ -53,7 +53,7 @@ const ChatInput = (): JSX.Element => {
             );
           }}
         />
-        <button className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-transparent hover:bg-blue-50 text-accent-red rounded-full transition">
+        <button type="submit" aria-label="Kirim" className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-transparent hover:bg-blue-50 text-accent-red rounded-full transition">
           <Send className="w-5 h-5 rotate-45" fill="currentColor" />
         </button>
       </div>

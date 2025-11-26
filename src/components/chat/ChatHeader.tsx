@@ -26,9 +26,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           {/* Online Indicator */}
           <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
         </div>
-        <div>
-          <h3 className="font-bold text-gray-900 text-lg">{expert.name}</h3>
-          <p className="text-xs text-gray-500">{status}</p>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-gray-900 text-lg">{expert.name}</h3>
+            {expert.isAi && (
+              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-600 text-white">PAKAR VIRTUAL</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500">{status} • {expert.role}</p>
         </div>
       </div>
 

@@ -49,8 +49,10 @@ const ChatWindow: React.FC = () => {
     initialMessages();
   }, [expert, initialMessages]);
 
+  if (!expert) return null;
+
   return (
-    <div className="w-full max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl flex flex-col h-120 md:h-160">
+    <div className="w-full max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl flex flex-col min-h-[60vh] md:min-h-[70vh] h-[calc(100vh-180px)]">
       <ChatHeader
         expert={expert}
         status={
@@ -65,22 +67,16 @@ const ChatWindow: React.FC = () => {
       {/* Chat Area dengan Background Pattern */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-6 bg-[#fdf8f0] relative"
+        className="flex-1 overflow-y-auto p-6 pb-8 bg-[#fdf8f0] relative scroll-smooth"
       >
-        {/* CSS Pattern Hack untuk simulasi Batik background */}
-        <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
-          style={{
-            backgroundImage: 'radial-gradient(#444 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-          }}
-        ></div>
+        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('/assets/background-chat.svg')] bg-repeat bg-contain"></div>
 
         {messages.map((msg) => (
           <ChatBubble
             key={msg.id}
             message={msg.text}
             isUser={msg.sender === 'user'}
+            avatarUrl={msg.sender === 'ai' ? expert?.image : undefined}
             additional={msg.additional}
             onOptionClick={sendMessage}
           />
@@ -91,6 +87,7 @@ const ChatWindow: React.FC = () => {
             key={msg.id}
             message={msg.text}
             isUser={msg.speaker === 'user'}
+            avatarUrl={msg.speaker === 'ai' ? expert?.image : undefined}
           />
         ))}
 
