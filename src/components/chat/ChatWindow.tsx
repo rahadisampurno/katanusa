@@ -29,6 +29,16 @@ const ChatWindow: React.FC = () => {
       chatContainerRef.current.scrollTop =
         chatContainerRef.current.scrollHeight;
     }
+
+    window.addEventListener('popstate', () => {
+      if (callStatus === CallStatusEnum.ACTIVE) {
+        endCall();
+      }
+    });
+
+    return (): void => {
+      window.removeEventListener('popstate', () => {});
+    };
   }, [messages, isLoading, liveTranscript]);
 
   const initialMessages = useCallback(() => {
@@ -61,7 +71,10 @@ const ChatWindow: React.FC = () => {
             : 'Online'
         }
         startCall={startCall}
-        onClose={() => navigate('/experts')}
+        onClose={() => {
+          endCall();
+          navigate('/experts');
+        }}
       />
 
       {/* Chat Area dengan Background Pattern */}

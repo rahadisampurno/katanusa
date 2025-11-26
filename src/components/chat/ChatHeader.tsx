@@ -30,10 +30,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-gray-900 text-lg">{expert.name}</h3>
             {expert.isAi && (
-              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-600 text-white">PAKAR VIRTUAL</span>
+              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-600 text-white">
+                PAKAR VIRTUAL
+              </span>
             )}
           </div>
-          <p className="text-xs text-gray-500">{status} • {expert.role}</p>
+          <p className="text-xs text-gray-500">
+            {status} • {expert.role}
+          </p>
         </div>
       </div>
 
