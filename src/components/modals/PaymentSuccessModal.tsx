@@ -38,7 +38,7 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
               onClose();
               // Navigate to booking history or dashboard if available
               // For now, maybe just close or go to experts list
-              navigate('/experts');
+              navigate('/booking-history');
             }}
           >
             Lihat Booking Sesi Saya
