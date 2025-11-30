@@ -4,9 +4,13 @@ import {
   LiveServerMessage,
   Modality,
   Session,
+  type Tool,
+  Type,
 } from '@google/genai';
 import type { ChatMessage } from '../types/chat';
 import { type Expert } from '../types/expert';
+import type { RagContext } from '../types/rag';
+import network from './network';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -36,6 +40,14 @@ const getAiResponse = async ({
   try {
     const model = 'gemini-2.5-flash';
 
+    const ragContext = await network.post<RagContext[]>('/rag-context', {
+      chat: userMessage,
+    });
+
+    const ragContextText = ragContext.data
+      .map((item) => item.content)
+      .join('\n');
+
     const systemInstruction = `
         Anda adalah Asisten AI dari ${expert.name}, seorang ${expert.role}. ${expert.bio}. berjenis kelamin ${expert.gender}.
         Anda harus selalu berbicara sebagai ${expert.name} (gunakan sudut pandang orang pertama "saya"). 
@@ -46,6 +58,8 @@ const getAiResponse = async ({
         - Jawab pertanyaan pengguna terkait budaya Indonesia dengan ramah, informatif, dan sesuai dengan keahlian Anda (${expert?.specialties?.join(', ')}). 
         - Jaga agar jawaban tetap ringkas dan mudah dipahami.
         - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
+
+        - Gunakan konteks berikut ini untuk menjawab pertanyaan pengguna: ${ragContextText}
         
         FORMAT RESPONSE HARUS JSON:
         {
@@ -105,7 +119,30 @@ export interface AiCallCallbacks {
   onclose: (e: CloseEvent) => void;
 }
 
-const startAiCallSession = (
+const tools: Tool[] = [
+  {
+    functionDeclarations: [
+      {
+        name: 'searchKnowledgeBase',
+        description:
+          'Gunakan alat ini untuk mencari informasi spesifik, fakta budaya, sejarah, atau filosofi yang berkaitan dengan keahlian Anda jika Anda tidak yakin atau membutuhkan detail akurat.',
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            query: {
+              type: Type.STRING,
+              description:
+                'Kata kunci atau pertanyaan untuk dicari di database pengetahuan.',
+            },
+          },
+          required: ['query'],
+        },
+      },
+    ],
+  },
+];
+
+const startAiCallSession = async (
   expert: Expert,
   callbacks: AiCallCallbacks,
 ): Promise<Session> => {
@@ -115,18 +152,85 @@ const startAiCallSession = (
 
   const systemInstruction = `
     Anda adalah Asisten AI dari ${expert.name}, seorang ${expert.role}. ${expert.bio}. 
-    Anda harus selalu berbicara sebagai ${expert.name} 
-    (gunakan sudut pandang orang pertama "saya"). 
-    Anda sedang dalam panggilan suara dan video langsung. 
-    Jawab pertanyaan pengguna dengan ramah dan informatif, sesuai keahlian Anda (${expert.specialties.join(', ')}). 
-    Pengguna mungkin akan membagikan kamera atau layar mereka; 
-    berikan bantuan berdasarkan apa yang Anda lihat. Jangan pernah mengungkapkan bahwa Anda adalah AI.
+    Anda harus selalu berbicara sebagai ${expert.name} (gunakan sudut pandang orang pertama "saya"). 
+    
+    [INSTRUKSI PENTING]
+    Anda memiliki akses ke "searchKnowledgeBase". 
+    JANGAN mengarang jawaban untuk pertanyaan spesifik tentang budaya, sejarah, atau data faktual.
+    GUNAKAN alat tersebut untuk mencari jawaban yang valid dari database pengetahuan Anda.
+    Jika alat memberikan informasi, gunakan informasi tersebut untuk menjawab user secara lisan.
+    
+    Jawab pertanyaan pengguna dengan ramah dan informatif.
     `;
+
+  let currentSession: Session | null = null;
+
+  const wrappedCallbacks = {
+    ...callbacks,
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    onmessage: async (message: LiveServerMessage) => {
+      // 1. Cek apakah Gemini meminta penggunaan Tool (Function Call)
+      if (message.toolCall) {
+        console.log('🛠️ AI sedang memanggil tool:', message.toolCall);
+
+        const functionCalls = message.toolCall.functionCalls;
+        const toolResponses = [];
+
+        // Loop semua request function (bisa jadi ada multiple calls)
+        for (const call of functionCalls ?? []) {
+          if (call.name === 'searchKnowledgeBase') {
+            const args = call.args as { query: string };
+            console.log(`🔍 Searching RAG for: ${args.query}`);
+
+            const ragContext = await network.post<RagContext[]>(
+              '/rag-context',
+              {
+                chat: args.query,
+              },
+            );
+
+            const ragContextText = ragContext.data
+              .map((item) => item.content)
+              .join('\n');
+
+            toolResponses.push({
+              id: call.id,
+              name: call.name,
+              response: {
+                result:
+                  ragContextText ||
+                  'Maaf, tidak ditemukan informasi spesifik di database.',
+              },
+            });
+          }
+        }
+
+        // 2. Kirim hasil pencarian RAG kembali ke Gemini
+        if (currentSession && toolResponses.length > 0) {
+          console.log('📤 Sending Tool Response back to AI...');
+          // await currentSession.sendToolResponse({
+          //   toolResponse: {
+          //     functionResponses: toolResponses,
+          //   },
+          // });
+          currentSession.sendToolResponse({
+            functionResponses: toolResponses,
+          });
+          // Gemini akan memproses ini dan kemudian mengirim audio baru
+          return;
+        }
+      }
+
+      // 3. Jika bukan tool call (misal audio biasa), teruskan ke callback UI asli
+      await callbacks.onmessage(message);
+    },
+  };
 
   const sessionPromise = ai.live.connect({
     model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-    callbacks,
+    callbacks: wrappedCallbacks,
     config: {
+      tools,
       responseModalities: [Modality.AUDIO],
       inputAudioTranscription: {},
       outputAudioTranscription: {},
@@ -137,7 +241,9 @@ const startAiCallSession = (
     },
   });
 
-  return sessionPromise;
+  currentSession = await sessionPromise;
+
+  return currentSession;
 };
 
 export default {
