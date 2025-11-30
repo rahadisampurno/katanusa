@@ -20,43 +20,44 @@ const useExpertTalk = (
     callStatus,
     setCallStatus,
     setLiveTranscript,
-    setIsVideoEnabled,
-    setIsScreenSharing,
+    // setIsVideoEnabled,
+    // setIsScreenSharing,
   } = useExpertTalkStore();
 
-  const { messages, setMessages } = useExpertChatStore();
+  const { messages, setMessages, setIsLoading } = useExpertChatStore();
 
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const videoStreamRef = useRef<MediaStream | null>(null);
+  // const videoStreamRef = useRef<MediaStream | null>(null);
 
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const nextAudioStartTimeRef = useRef<number>(0);
   const audioSourcesRef = useRef(new Set<AudioBufferSourceNode>());
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  // const videoRef = useRef<HTMLVideoElement>(null);
 
-  const frameIntervalRef = useRef<number | null>(null);
+  // const frameIntervalRef = useRef<number | null>(null);
 
-  const stopVideoStream = (): void => {
-    console.log('Stopping video stream...');
-    if (frameIntervalRef.current) {
-      window.clearInterval(frameIntervalRef.current);
-      frameIntervalRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.oncanplay = null;
-    }
-    videoStreamRef.current?.getTracks().forEach((track) => track.stop());
-    videoStreamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-    setIsVideoEnabled(false);
-    setIsScreenSharing(false);
-  };
+  // const stopVideoStream = (): void => {
+  //   console.log('Stopping video stream...');
+  //   if (frameIntervalRef.current) {
+  //     window.clearInterval(frameIntervalRef.current);
+  //     frameIntervalRef.current = null;
+  //   }
+  //   if (videoRef.current) {
+  //     videoRef.current.oncanplay = null;
+  //   }
+  //   videoStreamRef.current?.getTracks().forEach((track) => track.stop());
+  //   videoStreamRef.current = null;
+  //   if (videoRef.current) videoRef.current.srcObject = null;
+  //   setIsVideoEnabled(false);
+  //   setIsScreenSharing(false);
+  // };
 
   const endCall = async (): Promise<void> => {
-    stopVideoStream();
+    // stopVideoStream();
+    setIsLoading(false);
 
     if (sessionPromiseRef.current) {
       sessionPromiseRef.current
@@ -165,6 +166,7 @@ const useExpertTalk = (
           }
         },
         onmessage: async (message: LiveServerMessage): Promise<void> => {
+          setIsLoading(true);
           if (message.serverContent?.inputTranscription) {
             const text = message.serverContent.inputTranscription.text;
             const prev = useExpertTalkStore.getState().liveTranscript;
@@ -240,6 +242,7 @@ const useExpertTalk = (
             nextAudioStartTimeRef.current += audioBuffer.duration;
             audioSourcesRef.current.add(source);
           }
+          setIsLoading(false);
         },
         onclose: (): void => {
           console.log('Session closed by server.');
@@ -270,6 +273,8 @@ const useExpertTalk = (
     } catch (error) {
       console.error('Failed to start call:', error);
       await endCall();
+    } finally {
+      setIsLoading(false);
     }
   };
 

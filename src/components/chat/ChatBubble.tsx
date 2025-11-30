@@ -1,10 +1,8 @@
+import { User } from 'lucide-react';
 import React from 'react';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import ReactMarkdown from 'react-markdown';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import remarkGfm from 'remark-gfm';
 import { cn } from '../../libs/utils';
-import { User } from 'lucide-react';
 
 interface ChatBubbleProps {
   message: string;
@@ -33,12 +31,14 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       <div className="shrink-0 w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
         {isUser ? (
           <User className="w-5 h-5 text-gray-600" />
+        ) : avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt="avatar"
+            className="w-full h-full object-cover"
+          />
         ) : (
-          avatarUrl ? (
-            <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-          ) : (
-            <User className="w-5 h-5 text-gray-600" />
-          )
+          <User className="w-5 h-5 text-gray-600" />
         )}
       </div>
       {/* Bubble */}

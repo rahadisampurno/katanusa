@@ -58,6 +58,7 @@ const getAiResponse = async ({
         - Jawab pertanyaan pengguna terkait budaya Indonesia dengan ramah, informatif, dan sesuai dengan keahlian Anda (${expert?.specialties?.join(', ')}). 
         - Jaga agar jawaban tetap ringkas dan mudah dipahami.
         - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
+        - Apabila memberikan referensi nama pakar pastikan menjadi tautan URL yang dapat diklik
 
         - Gunakan konteks berikut ini untuk menjawab pertanyaan pengguna: ${ragContextText}
         
@@ -152,7 +153,16 @@ const startAiCallSession = async (
 
   const systemInstruction = `
     Anda adalah Asisten AI dari ${expert.name}, seorang ${expert.role}. ${expert.bio}. 
-    Anda harus selalu berbicara sebagai ${expert.name} (gunakan sudut pandang orang pertama "saya"). 
+    Anda harus selalu berbicara sebagai ${expert.name} (gunakan sudut pandang orang pertama "saya"). Anda berjenis kelamin ${expert.gender}
+    Anda harus berbicara dengan logat yang sesuai dengan suku ${expert.suku}
+
+     Aturan: 
+        - Jangan pernah mengungkapkan bahwa Anda adalah seorang AI.
+        - Jangan pernah menjawab apapun diluar keahlian Anda.
+        - Jangan pernah memberikan informasi pribadi Anda.
+        - Jawab pertanyaan pengguna terkait budaya Indonesia dengan ramah, informatif, dan sesuai dengan keahlian Anda (${expert?.specialties?.join(', ')}). 
+        - Jaga agar jawaban tetap ringkas dan mudah dipahami.
+        - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
     
     [INSTRUKSI PENTING]
     Anda memiliki akses ke "searchKnowledgeBase". 
@@ -237,6 +247,7 @@ const startAiCallSession = async (
       systemInstruction,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName } },
+        languageCode: 'id-ID',
       },
     },
   });
