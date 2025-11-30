@@ -1,6 +1,8 @@
 services:
   katanusa-web:
     container_name: katanusa-web
+    env_file:
+      - .env.local
     build: 
       context: .
     ports:
