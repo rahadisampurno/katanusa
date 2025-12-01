@@ -5,11 +5,13 @@ import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import BookingHistory from './pages/Booking/BookingHistory';
 import ExpertChatPage from './pages/Chat/ExpertChatPage';
-import expertChatPageLoader from './pages/Chat/ExpertChatPage.loader.ts';
+import expertChatPageLoader from './pages/Chat/ExpertChatPage.loader';
+import Dashboard from './pages/Dashboard/Dashboard';
+import Transaction from './pages/Dashboard/Transaction';
 import BrowseExperts from './pages/Experts/BrowseExperts';
-import DetailExperts from './pages/Experts/DetailExperts.tsx';
-import LandingPage from './pages/Home/LandingPage';
+import DetailExperts from './pages/Experts/DetailExperts';
 import About from './pages/Home/About';
+import LandingPage from './pages/Home/LandingPage';
 
 const router = createBrowserRouter([
   {
@@ -48,6 +50,19 @@ const router = createBrowserRouter([
         path: '/experts/:id/chats',
         loader: expertChatPageLoader,
         element: <ExpertChatPage />,
+      },
+    ],
+  },
+  {
+    path: '/dashboard',
+    children: [
+      {
+        path: '/dashboard',
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/transaction',
+        element: <Transaction />,
       },
     ],
   },

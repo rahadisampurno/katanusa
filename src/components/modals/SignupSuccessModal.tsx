@@ -1,7 +1,7 @@
-import { CheckCircle } from "lucide-react";
-import type React from "react";
-import { useNavigate } from "react-router";
-import Button from "../ui/Button";
+import { CheckCircle } from 'lucide-react';
+import type React from 'react';
+import { useNavigate } from 'react-router';
+import Button from '../ui/Button';
 
 interface SignupSuccessModalProps {
   isOpen: boolean;
@@ -36,7 +36,7 @@ const SignupSuccessModal: React.FC<SignupSuccessModalProps> = ({
             className="w-full bg-[#1E315A] hover:bg-[#152440] text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-[#1E315A]/20 transition-all"
             onClick={() => {
               onClose();
-              navigate("/login");
+              navigate('/login');
             }}
           >
             Masuk Sekarang
@@ -45,7 +45,7 @@ const SignupSuccessModal: React.FC<SignupSuccessModalProps> = ({
           <button
             onClick={() => {
               onClose();
-              navigate("/");
+              navigate('/');
             }}
             className="w-full text-[#1E315A] font-bold hover:text-[#152440] transition-colors py-2"
           >
