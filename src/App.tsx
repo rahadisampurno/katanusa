@@ -15,6 +15,7 @@ import BrowseExperts from './pages/Experts/BrowseExperts';
 import DetailExperts from './pages/Experts/DetailExperts';
 import About from './pages/Home/About';
 import LandingPage from './pages/Home/LandingPage';
+import PaymentSuccess from './pages/Payment/PaymentSuccess';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +51,16 @@ const router = createBrowserRouter([
         path: '/auth/verify',
         loader: verifyLoader,
         element: <Verify />,
+      },
+    ],
+  },
+
+  {
+    path: '/payment',
+    children: [
+      {
+        path: '/payment/success',
+        element: <PaymentSuccess />,
       },
     ],
   },

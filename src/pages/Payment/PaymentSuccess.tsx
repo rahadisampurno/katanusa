@@ -2,24 +2,14 @@ import type React from 'react';
 import { useNavigate } from 'react-router';
 // @ts-expect-error - SVG import
 import IconPaymentSuccess from '../../components/svgs/icon-payment-success.svg?react';
-import Button from '../ui/Button';
+import Button from '../../components/ui/Button';
 
-interface PaymentSuccessModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
+const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-md p-8 flex flex-col items-center text-center shadow-2xl relative animate-in fade-in zoom-in duration-300">
+    <div className="bg-white w-full flex justify-center items-center h-screen">
+      <div className=" max-w-md mx-auto p-8 flex flex-col items-center text-center relative animate-in fade-in zoom-in duration-300">
         <div className="mb-6 w-full flex justify-center">
           <IconPaymentSuccess className="w-64 h-auto" />
         </div>
@@ -35,7 +25,6 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
           <Button
             className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-red-600/20 transition-all"
             onClick={() => {
-              onClose();
               // Navigate to booking history or dashboard if available
               // For now, maybe just close or go to experts list
               navigate('/booking-history');
@@ -46,7 +35,6 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
 
           <button
             onClick={() => {
-              onClose();
               navigate('/');
             }}
             className="w-full text-red-600 font-bold hover:text-red-700 transition-colors py-2"
@@ -59,4 +47,4 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   );
 };
 
-export default PaymentSuccessModal;
+export default PaymentSuccess;

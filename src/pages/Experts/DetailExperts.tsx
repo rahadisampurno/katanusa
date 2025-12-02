@@ -8,7 +8,6 @@ import BookingModal from '../../components/modals/BookingModal';
 import PaymentModal, {
   type BookingData,
 } from '../../components/modals/PaymentModal';
-import PaymentSuccessModal from '../../components/modals/PaymentSuccessModal';
 // @ts-expect-error - SVG import
 import LogoKataNusaWhite from '../../components/svgs/logo-katanusa-white.svg?react';
 import Button from '../../components/ui/Button';
@@ -18,10 +17,9 @@ import auth from '../../libs/auth';
 const DetailExperts = (): JSX.Element => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isPaymentSuccessModalOpen, setIsPaymentSuccessModalOpen] =
-    useState(false);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
   const expert = experts.find((e) => e.id === id);
 
@@ -237,9 +235,11 @@ const DetailExperts = (): JSX.Element => {
         onClose={() => setIsBookingModalOpen(false)}
         expert={expert}
         onProceed={(data) => {
+          const userData = auth.getUserData();
           setBookingData({
             expert,
             ...data,
+            userData,
           });
           setIsBookingModalOpen(false);
           setIsPaymentModalOpen(true);
@@ -251,14 +251,6 @@ const DetailExperts = (): JSX.Element => {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         bookingData={bookingData}
-        onSuccess={() => {
-          setIsPaymentSuccessModalOpen(true);
-        }}
-      />
-
-      <PaymentSuccessModal
-        isOpen={isPaymentSuccessModalOpen}
-        onClose={() => setIsPaymentSuccessModalOpen(false)}
       />
     </main>
   );

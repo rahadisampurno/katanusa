@@ -1,6 +1,9 @@
+import { useMutation } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import auth from '../../libs/auth';
+import network from '../../libs/network';
 import Button from '../ui/Button';
 
 interface Expert {
@@ -22,30 +25,71 @@ export interface BookingData {
   date: string; // Formatted date string or dayjs object
   time: string;
   sessionType: SessionType;
+  userData: any;
 }
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   bookingData: BookingData | null;
-  onSuccess: () => void;
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
   bookingData,
-  onSuccess,
 }) => {
-  const [customerName, setCustomerName] = useState('Dena Hardianto');
-  const [customerEmail, setCustomerEmail] = useState('denahardian@gmail.com');
-  const [customerWhatsapp, setCustomerWhatsapp] = useState('+6285623144131');
+  const [isLoading, setIsLoading] = useState(false);
+  const [customerName, setCustomerName] = useState<string>();
+  const [customerEmail, setCustomerEmail] = useState<string>();
+  const [customerWhatsapp, setCustomerWhatsapp] = useState<string>();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     string | null
   >('bca_va');
   const [expandedMethod, setExpandedMethod] = useState<string | null>(
     'virtual_account',
   );
+
+  useEffect(() => {
+    if (import.meta.env.VITE_MIDTRANS_CLIENT_KEY) {
+      const script = document.createElement('script');
+      script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+      script.setAttribute(
+        'data-client-key',
+        import.meta.env.VITE_MIDTRANS_CLIENT_KEY,
+      );
+      document.body.appendChild(script);
+      (window as any).snap = (window as any).snap || {};
+    }
+  }, []);
+
+  const { mutate: bookExpert } = useMutation({
+    mutationFn: async () => await network.post('/booking', bookingData),
+    onSuccess: (response) => {
+      console.log(response);
+      (window as any).snap.pay(response.data.paymentResult.token);
+      setIsLoading(false);
+    },
+    onError: (err) => {
+      console.log(err);
+      setIsLoading(false);
+    },
+  });
+
+  const initBookingForm = useCallback(() => {
+    const userData = auth.getUserData();
+    if (userData) {
+      setTimeout(() => {
+        setCustomerName(userData?.user_metadata?.name || '');
+        setCustomerEmail(userData?.email || '');
+        setCustomerWhatsapp(userData?.user_metadata?.phone || '');
+      }, 1000);
+    }
+  }, []);
+
+  useEffect(() => {
+    initBookingForm();
+  }, [initBookingForm]);
 
   if (!isOpen || !bookingData) return null;
 
@@ -72,10 +116,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   const handlePayment = (): void => {
-    // Simulate payment processing
-    setTimeout(() => {
-      onSuccess();
-    }, 1000);
+    setIsLoading(true);
+    bookExpert();
   };
 
   return (
@@ -148,13 +190,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 2. Metode Pembayaran
               </h3>
               <div className="space-y-3">
-                {/* QRIS */}
+                {/* Midtrans */}
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                   <button
                     onClick={() => toggleMethod('qris')}
                     className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors"
                   >
-                    <span className="font-medium text-gray-900">QRIS</span>
+                    <span className="font-medium text-gray-900">Midtrans</span>
                     {expandedMethod === 'qris' ? (
                       <ChevronUp className="w-5 h-5 text-gray-500" />
                     ) : (
@@ -174,16 +216,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                           }
                           className="w-5 h-5 text-[#1E315A] focus:ring-[#1E315A]"
                         />
-                        <span className="text-gray-700">
-                          QRIS (GoPay, OVO, Dana, dll)
-                        </span>
+                        <span className="text-gray-700">Midtrans</span>
                       </label>
                     </div>
                   )}
                 </div>
 
                 {/* Virtual Account */}
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className="border border-gray-200 rounded-xl overflow-hidden hidden">
                   <button
                     onClick={() => toggleMethod('virtual_account')}
                     className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors"
@@ -232,7 +272,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
 
                 {/* E-Wallet */}
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className="border border-gray-200 rounded-xl overflow-hidden hidden">
                   <button
                     onClick={() => toggleMethod('ewallet')}
                     className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors"
@@ -339,8 +379,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <Button
               className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-red-600/20 transition-all"
               onClick={handlePayment}
+              disabled={isLoading}
             >
-              Bayar Sekarang
+              {isLoading ? 'Loading...' : 'Bayar Sekarang'}
             </Button>
           </div>
         </div>
