@@ -53,7 +53,7 @@ const AuthenticatedButton: React.FC = () => {
               onClick={() => {
                 auth.logout();
                 revalidate();
-                navigate('/login');
+                navigate('/auth/login');
               }}
               className="text-red-500 hover:text-red-500/70 transition cursor-pointer p-4 rounded-b-2xl"
             >
