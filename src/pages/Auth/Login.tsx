@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
@@ -6,6 +7,7 @@ import { Link, useNavigate } from 'react-router';
 import LogoKataNusaWhite from '../../components/svgs/logo-katanusa-white.svg?react';
 import Button from '../../components/ui/Button';
 import auth from '../../libs/auth';
+import network from '../../libs/network';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -15,7 +17,25 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent): void => {
+  const { mutate: submitLogin } = useMutation({
+    mutationFn: async () =>
+      await network.post('/auth/login', {
+        email,
+        password,
+      }),
+    onSuccess: (response) => {
+      auth.setAccessToken(response.data.session.access_token);
+      auth.setUserData(response.data.user);
+      navigate('/');
+    },
+    onError: (error) => {
+      console.log('error', error);
+      setError(error.message);
+      setIsLoading(false);
+    },
+  });
+
+  const handleLogin = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -27,69 +47,7 @@ const Login: React.FC = () => {
       return;
     }
 
-    // Mock API call
-    setTimeout(() => {
-      setIsLoading(false);
-
-      if (password !== 'bismillahjuara1') {
-        alert('Password salah');
-        return;
-      }
-
-      switch (email) {
-        case 'dena@katanusa.com':
-          auth.setUserData({
-            email: 'dena@katanusa.com',
-            name: 'Dena Hardianto',
-          });
-          auth.setAccessToken('mock-token');
-          navigate('/');
-          break;
-        case 'rahadi@katanusa.com':
-          auth.setUserData({
-            email: 'rahadi@katanusa.com',
-            name: 'Rahadi Sampurno',
-          });
-          auth.setAccessToken('mock-token');
-          navigate('/');
-          break;
-        case 'rahma@katanusa.com':
-          auth.setUserData({
-            email: 'rahma@katanusa.com',
-            name: 'Anisa Rahma',
-          });
-          auth.setAccessToken('mock-token');
-          navigate('/');
-          break;
-        case 'danu@katanusa.com':
-          auth.setUserData({
-            email: 'danu@katanusa.com',
-            name: 'Danu Ega Pratama',
-          });
-          auth.setAccessToken('mock-token');
-          navigate('/');
-          break;
-        case 'agung@katanusa.com':
-          auth.setUserData({
-            email: 'agung@katanusa.com',
-            name: 'M Agung Rizkyana',
-          });
-          auth.setAccessToken('mock-token');
-          navigate('/');
-          break;
-        case 'budayago@katanusa.com':
-          auth.setUserData({
-            email: 'budayago@katanusa.com',
-            name: 'BudayaGo',
-          });
-          auth.setAccessToken('mock-token');
-          navigate('/');
-          break;
-        default:
-          alert('Email tidak terdaftar');
-          break;
-      }
-    }, 1500);
+    submitLogin();
   };
 
   return (
@@ -233,7 +191,7 @@ const Login: React.FC = () => {
           <p className="mt-8 text-center text-sm text-gray-600">
             Belum punya akun?{' '}
             <Link
-              to="/signup"
+              to="/auth/signup"
               className="font-bold text-[#1E315A] hover:underline"
             >
               Daftar Sekarang

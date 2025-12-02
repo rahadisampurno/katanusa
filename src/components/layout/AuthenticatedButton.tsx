@@ -27,7 +27,7 @@ const AuthenticatedButton: React.FC = () => {
     >
       <div className="flex items-center gap-2">
         <User className="w-4 h-4" />
-        <span>{auth.getUserData()?.name}</span>
+        <span>{auth.getUserData()?.user_metadata?.name}</span>
       </div>
       <div className="flex items-center gap-2 text-amber-500 font-bold">
         <span className="inline-block">{aiToken}</span>

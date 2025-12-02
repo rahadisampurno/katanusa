@@ -62,7 +62,7 @@ const Navbar: React.FC<NavbarProps> = ({ isWhite = false }) => {
 
           {/* Auth Buttons Mobile */}
           <div className="flex md:hidden flex-col gap-4 w-full items-center">
-            <Link to="/login" className="hover:text-gray-300 font-medium">
+            <Link to="/auth/login" className="hover:text-gray-300 font-medium">
               Masuk
             </Link>
             <Button
@@ -82,7 +82,10 @@ const Navbar: React.FC<NavbarProps> = ({ isWhite = false }) => {
             <AuthenticatedButton />
           ) : (
             <>
-              <Link to="/login" className="hover:text-gray-300 font-medium">
+              <Link
+                to="/auth/login"
+                className="hover:text-gray-300 font-medium"
+              >
                 Masuk
               </Link>
               <Button
@@ -90,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({ isWhite = false }) => {
                 className={cn('px-6 py-1.5 border-black/50 text-black', {
                   'text-white border-white': isWhite,
                 })}
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/auth/signup')}
               >
                 Daftar
               </Button>

@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
@@ -7,6 +8,16 @@ import SignupSuccessModal from '../../components/modals/SignupSuccessModal';
 import LogoKataNusaWhite from '../../components/svgs/logo-katanusa-white.svg?react';
 import Button from '../../components/ui/Button';
 import auth from '../../libs/auth';
+import network from '../../libs/network';
+
+type SignupData = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: 'umum' | 'pakar';
+  scientificWorkLink?: string;
+};
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +32,21 @@ const Signup: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const { mutate: signup } = useMutation({
+    mutationFn: async (data: SignupData) =>
+      await network.post('/auth/signup', data),
+    onSuccess: () => {
+      setShowSuccessModal(true);
+      setIsLoading(false);
+      localStorage.setItem('email', email);
+      navigate('/auth/login');
+    },
+    onError: (error) => {
+      setError(error.message);
+      setIsLoading(false);
+    },
+  });
 
   const handleSignup = (e: React.FormEvent): void => {
     e.preventDefault();
@@ -52,12 +78,15 @@ const Signup: React.FC = () => {
       return;
     }
 
-    // Mock API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Mock success - show modal
-      setShowSuccessModal(true);
-    }, 1500);
+    // Call the signup mutation
+    signup({
+      name,
+      email,
+      password,
+      confirmPassword,
+      role,
+      scientificWorkLink,
+    });
   };
 
   return (
@@ -295,7 +324,7 @@ const Signup: React.FC = () => {
             <p className="mt-8 text-center text-sm text-gray-600">
               Sudah punya akun?{' '}
               <Link
-                to="/login"
+                to="/auth/login"
                 className="font-bold text-[#1E315A] hover:underline"
               >
                 Masuk

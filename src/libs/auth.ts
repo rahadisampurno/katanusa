@@ -1,5 +1,3 @@
-import type { UserDataType } from '../types/auth';
-
 const setAccessToken = (token: string): void => {
   localStorage.setItem('access_token', token);
 };
@@ -21,11 +19,11 @@ const logout = (): void => {
   removeAccessToken();
 };
 
-const setUserData = (userData: UserDataType): void => {
+const setUserData = (userData: any): void => {
   localStorage.setItem('user_data', JSON.stringify(userData));
 };
 
-const getUserData = (): UserDataType | null => {
+const getUserData = (): any | null => {
   const userData = localStorage.getItem('user_data');
   return userData ? JSON.parse(userData) : null;
 };

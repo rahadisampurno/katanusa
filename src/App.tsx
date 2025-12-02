@@ -1,8 +1,11 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { JSX } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
+import Verify from './pages/Auth/Verify';
+import verifyLoader from './pages/Auth/Verify.loader';
 import BookingHistory from './pages/Booking/BookingHistory';
 import ExpertChatPage from './pages/Chat/ExpertChatPage';
 import expertChatPageLoader from './pages/Chat/ExpertChatPage.loader';
@@ -12,6 +15,16 @@ import BrowseExperts from './pages/Experts/BrowseExperts';
 import DetailExperts from './pages/Experts/DetailExperts';
 import About from './pages/Home/About';
 import LandingPage from './pages/Home/LandingPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
 
 const router = createBrowserRouter([
   {
@@ -23,13 +36,24 @@ const router = createBrowserRouter([
     element: <BookingHistory />,
   },
   {
-    path: '/login',
-    element: <Login />,
+    path: '/auth',
+    children: [
+      {
+        path: '/auth/login',
+        element: <Login />,
+      },
+      {
+        path: '/auth/signup',
+        element: <Signup />,
+      },
+      {
+        path: '/auth/verify',
+        loader: verifyLoader,
+        element: <Verify />,
+      },
+    ],
   },
-  {
-    path: '/signup',
-    element: <Signup />,
-  },
+
   {
     path: '/about',
     element: <About />,
@@ -69,7 +93,11 @@ const router = createBrowserRouter([
 ]);
 
 const App = (): JSX.Element => {
-  return <RouterProvider router={router} />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  );
 };
 
 export default App;
