@@ -5,7 +5,9 @@ import { RouterProvider } from 'react-router/dom';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import Verify from './pages/Auth/Verify';
-import verifyLoader from './pages/Auth/Verify.loader';
+import protectedLoader from './pages/Auth/loader/Protected.loader';
+import publicLoader from './pages/Auth/loader/Public.loader';
+import verifyLoader from './pages/Auth/loader/Verify.loader';
 import BookingHistory from './pages/Booking/BookingHistory';
 import ExpertChatPage from './pages/Chat/ExpertChatPage';
 import expertChatPageLoader from './pages/Chat/ExpertChatPage.loader';
@@ -38,6 +40,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/auth',
+    loader: publicLoader,
     children: [
       {
         path: '/auth/login',
@@ -90,6 +93,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/dashboard',
+    loader: protectedLoader,
     children: [
       {
         path: '/dashboard',

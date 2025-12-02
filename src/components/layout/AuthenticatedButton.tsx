@@ -42,12 +42,14 @@ const AuthenticatedButton: React.FC = () => {
             >
               Booking Saya
             </Link>
-            <Link
-              to="/#"
-              className="hover:bg-gray-50 text-gray-700 transition p-4"
-            >
-              Pengaturan
-            </Link>
+            {auth.getUserData()?.user_metadata?.role === 'pakar' ? (
+              <Link
+                to="/dashboard"
+                className="hover:bg-gray-50 text-gray-700 transition p-4"
+              >
+                Dashboard
+              </Link>
+            ) : null}
             <div className="border-t border-gray-700/10"></div>
             <button
               onClick={() => {

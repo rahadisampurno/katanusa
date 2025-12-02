@@ -2,6 +2,8 @@ import { ChevronLeft, LogOutIcon, UserIcon } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import type React from 'react';
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import auth from '../../libs/auth';
 import { cn } from '../../libs/utils';
 import Button from '../ui/Button';
 import SidebarMenu from './SidebarMenu';
@@ -14,6 +16,7 @@ const Sidebar: React.FC<PropsWithChildren<SidebarProps>> = ({
   children,
   title,
 }) => {
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleSidebar = (): void => {
@@ -35,11 +38,13 @@ const Sidebar: React.FC<PropsWithChildren<SidebarProps>> = ({
             />
           </button>
           <div className="p-6">
-            <h1
-              className={`text-2xl font-bold text-red-600 ${isCollapsed ? 'hidden' : ''}`}
-            >
-              Katanusa Pakar
-            </h1>
+            <Link to="/">
+              <h1
+                className={`text-2xl font-bold cursor-pointer text-red-600 ${isCollapsed ? 'hidden' : ''}`}
+              >
+                Katanusa Pakar
+              </h1>
+            </Link>
           </div>
           <SidebarMenu isCollapsed={isCollapsed} />
           <div className="absolute border-t border-gray-200 bottom-0 left-0 w-full">
@@ -72,6 +77,10 @@ const Sidebar: React.FC<PropsWithChildren<SidebarProps>> = ({
                     'block p-0': isCollapsed,
                   },
                 )}
+                onClick={() => {
+                  auth.logout();
+                  navigate('/auth/login');
+                }}
               >
                 <LogOutIcon className="w-5 h-5" />
                 {isCollapsed ? '' : 'Logout'}
