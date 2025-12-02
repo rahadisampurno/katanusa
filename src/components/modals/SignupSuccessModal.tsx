@@ -36,7 +36,7 @@ const SignupSuccessModal: React.FC<SignupSuccessModalProps> = ({
             className="w-full bg-[#1E315A] hover:bg-[#152440] text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-[#1E315A]/20 transition-all"
             onClick={() => {
               onClose();
-              navigate('/login');
+              navigate('/auth/login');
             }}
           >
             Masuk Sekarang

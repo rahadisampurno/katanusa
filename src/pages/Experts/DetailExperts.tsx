@@ -113,7 +113,7 @@ const DetailExperts = (): JSX.Element => {
                     onClick={() =>
                       auth.isAuthenticated()
                         ? navigate(`/experts/${expert.id}/chats`)
-                        : navigate('/login')
+                        : navigate('/auth/login')
                     }
                   >
                     <MessageCircle />
@@ -124,7 +124,7 @@ const DetailExperts = (): JSX.Element => {
                     onClick={() =>
                       auth.isAuthenticated()
                         ? navigate(`/experts/${expert.id}/chats`)
-                        : navigate('/login')
+                        : navigate('/auth/login')
                     }
                   >
                     <Phone />
@@ -138,7 +138,7 @@ const DetailExperts = (): JSX.Element => {
                   onClick={() =>
                     auth.isAuthenticated()
                       ? setIsBookingModalOpen(true)
-                      : navigate('/login')
+                      : navigate('/auth/login')
                   }
                 >
                   <Calendar />
