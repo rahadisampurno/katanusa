@@ -64,7 +64,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   }, []);
 
   const { mutate: bookExpert } = useMutation({
-    mutationFn: async () => await network.post('/booking', bookingData),
+    mutationFn: async () =>
+      await network.post('/booking', {
+        ...bookingData,
+        totalAmount,
+      }),
     onSuccess: (response) => {
       console.log(response);
       (window as any).snap.pay(response.data.paymentResult.token);
