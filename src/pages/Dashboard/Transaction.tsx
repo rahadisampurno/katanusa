@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import {
