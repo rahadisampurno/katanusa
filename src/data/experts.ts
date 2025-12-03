@@ -92,7 +92,7 @@ export const experts: Expert[] = [
       'Kuliner Madura',
     ],
     bio: 'Ra Tretan adalah AI yang menjelaskan adat dan seni lisan Madura, tradisi karapan sapi, serta kuliner khas. Gaya bahasanya tegas dan bersahaja, mencerminkan karakter budaya Madura.',
-    gender: 'wanita',
+    gender: 'pria',
     isAi: true,
     suku: 'Madura',
   },
