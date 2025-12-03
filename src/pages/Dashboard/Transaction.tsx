@@ -1,63 +1,72 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import {
+  Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
   Filter,
+  Loader2,
 } from 'lucide-react';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import ReactPaginate from 'react-paginate';
 import Sidebar from '../../components/layout/Sidebar';
-import 'react-datepicker/dist/react-datepicker.css';
+import network from '../../libs/network';
 
 dayjs.extend(isBetween);
 
 // Types
-interface Transaction {
+interface Expert {
   id: string;
-  date: string;
-  transactionId: string;
-  bookingSession: string;
-  fee: number;
-  status: 'success' | 'pending' | 'failed';
+  name: string;
+  role: string;
+  image: string;
+  specialties: string[];
+  bio: string;
+  gender: string;
+  isAi: boolean;
+  articles?: string[];
+  suku: string;
 }
 
-// Mock Data
-const generateMockData = (count: number): Transaction[] => {
-  const statuses: ('success' | 'pending' | 'failed')[] = [
-    'success',
-    'pending',
-    'failed',
-  ];
-  const sessions = [
-    'Konsultasi Karir',
-    'Review CV',
-    'Mock Interview',
-    'Mentoring 1-on-1',
-  ];
+interface SessionType {
+  id: string;
+  label: string;
+  duration: string;
+  price: number;
+}
 
-  return Array.from({ length: count }, (_, i) => ({
-    id: `tr-${i + 1}`,
-    date: dayjs()
-      .subtract(Math.floor(Math.random() * 30), 'day')
-      .format('YYYY-MM-DD'),
-    transactionId: `TRX-${Math.floor(Math.random() * 1000000)}`,
-    bookingSession: sessions[Math.floor(Math.random() * sessions.length)],
-    fee: Math.floor(Math.random() * 500000) + 50000,
-    status: statuses[Math.floor(Math.random() * statuses.length)],
-  })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-};
+interface Booking {
+  id: number;
+  created_at: string;
+  expert: Expert;
+  schedule: string;
+  sessionType: SessionType;
+  isPaid: boolean;
+  bookingId: string;
+  time: string;
+  totalAmount: number;
+}
 
-const mockTransactions = generateMockData(50);
+interface Meta {
+  page: number;
+  limit: number;
+  total: number;
+}
+
+interface BookingResponse {
+  data: Booking[];
+  meta: Meta;
+}
 
 const Transaction: React.FC = () => {
-  const [transactions] = useState<Transaction[]>(mockTransactions);
-  const [filteredTransactions, setFilteredTransactions] =
-    useState<Transaction[]>(mockTransactions);
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
 
-  // Filters
+  // Filters State (Client-side for now as API only supports page/limit)
   const [statusFilter, setStatusFilter] = useState<
     'all' | 'success' | 'pending'
   >('all');
@@ -67,48 +76,22 @@ const Transaction: React.FC = () => {
   ]);
   const [startDate, endDate] = dateRange;
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 10;
+  // Fetch Data
+  const { data, isLoading, isError } = useQuery<BookingResponse>({
+    queryKey: ['bookings', page, limit],
+    queryFn: async () => {
+      const response = await network.get('/booking', {
+        params: {
+          page,
+          limit,
+        },
+      });
+      return response.data;
+    },
+    placeholderData: keepPreviousData,
+  });
 
-  const handleFilterChange = useCallback(() => {
-    let result = transactions;
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      result = result.filter((t) => t.status === statusFilter);
-    }
-
-    // Filter by date range
-    if (startDate && endDate) {
-      result = result.filter((t) =>
-        dayjs(t.date).isBetween(startDate, endDate, 'day', '[]'),
-      );
-    }
-
-    setTimeout(() => {
-      setFilteredTransactions(result);
-      setCurrentPage(0); // Reset to first page on filter change
-    }, 3000);
-  }, [statusFilter, startDate, endDate, transactions]);
-
-  // Filter Logic
-  useEffect(() => {
-    handleFilterChange();
-  }, [handleFilterChange]);
-
-  // Pagination Logic
-  const offset = currentPage * itemsPerPage;
-  const currentItems = filteredTransactions.slice(
-    offset,
-    offset + itemsPerPage,
-  );
-  const pageCount = Math.ceil(filteredTransactions.length / itemsPerPage);
-
-  const handlePageClick = (event: { selected: number }): void => {
-    setCurrentPage(event.selected);
-  };
-
+  // Helper Functions
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -117,18 +100,42 @@ const Transaction: React.FC = () => {
     }).format(amount);
   };
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'success':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const getStatusColor = (isPaid: boolean): string => {
+    return isPaid
+      ? 'bg-green-100 text-green-800'
+      : 'bg-yellow-100 text-yellow-800';
   };
+
+  const getStatusText = (isPaid: boolean): string => {
+    return isPaid ? 'success' : 'pending';
+  };
+
+  const handlePageClick = (event: { selected: number }): void => {
+    setPage(event.selected + 1);
+  };
+
+  // Client-side filtering (applied to the fetched page)
+  // Note: Ideally filtering should be server-side.
+  // Since the prompt specified only page/limit for the API,
+  // we filter the displayed data.
+  const filteredItems =
+    data?.data.filter((item) => {
+      const matchesStatus =
+        statusFilter === 'all'
+          ? true
+          : statusFilter === 'success'
+            ? item.isPaid
+            : !item.isPaid;
+
+      const matchesDate =
+        startDate && endDate
+          ? dayjs(item.created_at).isBetween(startDate, endDate, 'day', '[]')
+          : true;
+
+      return matchesStatus && matchesDate;
+    }) || [];
+
+  const pageCount = data?.meta ? Math.ceil(data.meta.total / limit) : 0;
 
   return (
     <Sidebar title="Transaction History">
@@ -169,105 +176,123 @@ const Transaction: React.FC = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Transaction ID
-                  </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Booking Session
-                  </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Fee
-                  </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {currentItems.length > 0 ? (
-                  currentItems.map((transaction) => (
-                    <tr
-                      key={transaction.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {dayjs(transaction.date).format('DD MMM YYYY')}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {transaction.transactionId}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {transaction.bookingSession}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {formatCurrency(transaction.fee)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(transaction.status)}`}
-                        >
-                          {transaction.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-6 py-8 text-center text-gray-500"
-                    >
-                      No transactions found matching your filters.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {filteredTransactions.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-              <div className="text-sm text-gray-500">
-                Showing <span className="font-medium">{offset + 1}</span> to{' '}
-                <span className="font-medium">
-                  {Math.min(offset + itemsPerPage, filteredTransactions.length)}
-                </span>{' '}
-                of{' '}
-                <span className="font-medium">
-                  {filteredTransactions.length}
-                </span>{' '}
-                results
-              </div>
-              <ReactPaginate
-                previousLabel={<ChevronLeft className="w-4 h-4" />}
-                nextLabel={<ChevronRight className="w-4 h-4" />}
-                breakLabel="..."
-                pageCount={pageCount}
-                marginPagesDisplayed={2}
-                pageRangeDisplayed={3}
-                onPageChange={handlePageClick}
-                containerClassName="flex items-center gap-2"
-                pageClassName="rounded-md"
-                pageLinkClassName="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 text-gray-600 transition-colors"
-                activeLinkClassName="!bg-red-600 !text-white !border-red-600"
-                previousClassName="rounded-md"
-                previousLinkClassName="p-1 block border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                nextClassName="rounded-md"
-                nextLinkClassName="p-1 block border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                breakClassName="text-gray-400"
-                disabledClassName="opacity-50 cursor-not-allowed"
-                renderOnZeroPageCount={null}
-              />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[400px] relative">
+          {isLoading && (
+            <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-red-600" />
             </div>
+          )}
+
+          {isError ? (
+            <div className="flex items-center justify-center h-64 text-red-500">
+              Failed to load transactions. Please try again.
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Transaction ID
+                      </th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Booking Session
+                      </th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Fee
+                      </th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredItems.length > 0 ? (
+                      filteredItems.map((transaction) => (
+                        <tr
+                          key={transaction.id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {dayjs(transaction.created_at).format(
+                              'DD MMM YYYY',
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {transaction.bookingId}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {transaction.sessionType.label}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {formatCurrency(transaction.totalAmount)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(transaction.isPaid)}`}
+                            >
+                              {getStatusText(transaction.isPaid)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
+                          No transactions found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {data && data.meta.total > 0 && (
+                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
+                  <div className="text-sm text-gray-500">
+                    Showing{' '}
+                    <span className="font-medium">
+                      {(page - 1) * limit + 1}
+                    </span>{' '}
+                    to{' '}
+                    <span className="font-medium">
+                      {Math.min(page * limit, data.meta.total)}
+                    </span>{' '}
+                    of <span className="font-medium">{data.meta.total}</span>{' '}
+                    results
+                  </div>
+                  <ReactPaginate
+                    previousLabel={<ChevronLeft className="w-4 h-4" />}
+                    nextLabel={<ChevronRight className="w-4 h-4" />}
+                    breakLabel="..."
+                    pageCount={pageCount}
+                    forcePage={page - 1}
+                    marginPagesDisplayed={2}
+                    pageRangeDisplayed={3}
+                    onPageChange={handlePageClick}
+                    containerClassName="flex items-center gap-2"
+                    pageClassName="rounded-md"
+                    pageLinkClassName="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 text-gray-600 transition-colors"
+                    activeLinkClassName="!bg-red-600 !text-white !border-red-600"
+                    previousClassName="rounded-md"
+                    previousLinkClassName="p-1 block border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    nextClassName="rounded-md"
+                    nextLinkClassName="p-1 block border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    breakClassName="text-gray-400"
+                    disabledClassName="opacity-50 cursor-not-allowed"
+                    renderOnZeroPageCount={null}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

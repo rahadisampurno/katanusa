@@ -68,6 +68,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       await network.post('/booking', {
         ...bookingData,
         totalAmount,
+        createdBy: auth.getUserData() ?? {},
       }),
     onSuccess: (response) => {
       console.log(response);
