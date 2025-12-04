@@ -16,11 +16,13 @@ type UseExpertTalkStore = {
   isVideoEnabled: boolean;
   isScreenSharing: boolean;
   isListening: boolean;
+  isAiSpeaking: boolean;
   setIsScreenSharing: (isScreenSharing: boolean) => void;
   setIsVideoEnabled: (isVideoEnabled: boolean) => void;
   setCallStatus: (callStatus: CallStatusEnum) => void;
   setLiveTranscript: (liveTranscript: TranscriptEntry[]) => void;
   setIsListening: (isListening: boolean) => void;
+  setIsAiSpeaking: (isAiSpeaking: boolean) => void;
 };
 
 const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
@@ -29,6 +31,7 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
   isVideoEnabled: false,
   isScreenSharing: false,
   isListening: false,
+  isAiSpeaking: false,
   setIsScreenSharing(isScreenSharing: boolean): void {
     set((state) => ({
       ...state,
@@ -57,6 +60,12 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
     set((state) => ({
       ...state,
       isListening,
+    }));
+  },
+  setIsAiSpeaking(isAiSpeaking: boolean): void {
+    set((state) => ({
+      ...state,
+      isAiSpeaking,
     }));
   },
 }));

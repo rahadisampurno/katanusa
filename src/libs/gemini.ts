@@ -6,6 +6,8 @@ import {
   Session,
   type Tool,
   Type,
+  StartSensitivity,
+  EndSensitivity,
 } from '@google/genai';
 import type { ChatMessage } from '../types/chat';
 import { type Expert } from '../types/expert';
@@ -284,6 +286,16 @@ const startAiCallSession = async (
     config: {
       tools,
       responseModalities: [Modality.AUDIO],
+
+      realtimeInputConfig: {
+        automaticActivityDetection: {
+          disabled: false,
+          startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
+          endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
+          prefixPaddingMs: 40,
+          silenceDurationMs: 700,
+        },
+      },
       inputAudioTranscription: {
         // languageCode: 'id',
       } as any,

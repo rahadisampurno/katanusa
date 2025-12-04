@@ -28,4 +28,5 @@ export interface Expert {
   accentHints?: string[];
   speakingRate?: number;
   pitch?: number;
+  greeting?: string;
 }

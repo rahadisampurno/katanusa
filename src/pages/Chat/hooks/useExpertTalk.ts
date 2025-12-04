@@ -22,6 +22,7 @@ const useExpertTalk = (
     setCallStatus,
     setLiveTranscript,
     setIsListening,
+    setIsAiSpeaking,
     // setIsVideoEnabled,
     // setIsScreenSharing,
   } = useExpertTalkStore();
@@ -41,6 +42,9 @@ const useExpertTalk = (
   const pendingAudioQueueRef = useRef<string[]>([]);
   const listenDebounceTimerRef = useRef<number | null>(null);
   const LISTENING_DEBOUNCE_MS = 700;
+  const VAD_THRESHOLD = 0.02;
+  const VAD_SILENCE_MS = 500;
+  const vadSilenceTimerRef = useRef<number | null>(null);
   // const videoRef = useRef<HTMLVideoElement>(null);
 
   // const frameIntervalRef = useRef<number | null>(null);
@@ -126,11 +130,16 @@ const useExpertTalk = (
 
     setLiveTranscript([]);
     setIsListening(false);
+    setIsAiSpeaking(false);
     pendingAiTextRef.current = '';
     pendingAudioQueueRef.current = [];
     if (listenDebounceTimerRef.current) {
       window.clearTimeout(listenDebounceTimerRef.current);
       listenDebounceTimerRef.current = null;
+    }
+    if (vadSilenceTimerRef.current) {
+      window.clearTimeout(vadSilenceTimerRef.current);
+      vadSilenceTimerRef.current = null;
     }
   };
 
@@ -169,10 +178,31 @@ const useExpertTalk = (
             scriptProcessor.onaudioprocess = (audioProcessingEvent): void => {
               const inputData =
                 audioProcessingEvent.inputBuffer.getChannelData(0);
-              const pcmBlob = audio.createBlob(inputData);
-              sessionPromiseRef.current?.then((session) => {
-                session.sendRealtimeInput({ media: pcmBlob });
-              });
+              let sumSquares = 0;
+              for (let i = 0; i < inputData.length; i++) {
+                const s = inputData[i];
+                sumSquares += s * s;
+              }
+              const rms = Math.sqrt(sumSquares / inputData.length);
+              if (
+                !useExpertTalkStore.getState().isAiSpeaking &&
+                rms > VAD_THRESHOLD
+              ) {
+                setIsListening(true);
+                if (vadSilenceTimerRef.current) {
+                  window.clearTimeout(vadSilenceTimerRef.current);
+                  vadSilenceTimerRef.current = null;
+                }
+                vadSilenceTimerRef.current = window.setTimeout(() => {
+                  setIsListening(false);
+                }, VAD_SILENCE_MS);
+              }
+              if (!useExpertTalkStore.getState().isAiSpeaking) {
+                const pcmBlob = audio.createBlob(inputData);
+                sessionPromiseRef.current?.then((session) => {
+                  session.sendRealtimeInput({ media: pcmBlob });
+                });
+              }
             };
 
             source?.connect(scriptProcessor);
@@ -326,9 +356,13 @@ const useExpertTalk = (
               const source = outputCtx.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(outputCtx.destination);
+              setIsAiSpeaking(true);
 
               source.addEventListener('ended', () => {
                 audioSourcesRef.current.delete(source);
+                if (audioSourcesRef.current.size === 0) {
+                  setIsAiSpeaking(false);
+                }
               });
 
               source.start(nextAudioStartTimeRef.current);

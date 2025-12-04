@@ -8,6 +8,7 @@ import useExpertTalk from '../../pages/Chat/hooks/useExpertTalk.ts';
 import useExpertTalkStore, {
   CallStatusEnum,
 } from '../../pages/Chat/hooks/useExpertTalkStore.ts';
+import type { Expert } from '../../types/expert.ts';
 import TalkEnd from '../talk/TalkEnd.tsx';
 import ChatBubble from './ChatBubble';
 import ChatHeader from './ChatHeader';
@@ -15,10 +16,11 @@ import ChatInput from './ChatInput';
 
 const ChatWindow: React.FC = () => {
   const navigate = useNavigate();
-  const { data: expert } = useLoaderData();
+  const { data: expert } = useLoaderData() as { data: Expert };
 
   const { messages, setMessages, isLoading } = useExpertChatStore();
-  const { callStatus, liveTranscript, isListening } = useExpertTalkStore();
+  const { callStatus, liveTranscript, isListening, isAiSpeaking } =
+    useExpertTalkStore();
   const { startCall, endCall } = useExpertTalk(expert);
   const { sendMessage } = useChatActions(expert);
 
@@ -46,7 +48,7 @@ const ChatWindow: React.FC = () => {
       setMessages([
         {
           sender: 'ai',
-          text: `Selamat datang! Saya adalah asisten AI dari ${expert.name}. Anda bisa bertanya lewat teks atau memulai panggilan suara dengan ikon telepon di atas.`,
+          text: `Selamat datang! Saya adalah asisten AI dengan nama ${expert.name} dari suku ${expert.suku}. Anda bisa belajar tentang ${expert.specialties.join(', ')}. dan lain - lain`,
           timestamp: dayjs().format(),
           id: v1(),
         },
@@ -114,18 +116,20 @@ const ChatWindow: React.FC = () => {
           </div>
         )}
 
-        {isListening && callStatus === CallStatusEnum.ACTIVE && (
-          <div className="flex items-end gap-3 justify-start">
-            <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-tl-none shadow-sm flex items-center space-x-2">
-              <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-              <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-              <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></span>
-              <span className="text-xs text-gray-500 ml-2">
-                Mendengarkan...
-              </span>
+        {isListening &&
+          !isAiSpeaking &&
+          callStatus === CallStatusEnum.ACTIVE && (
+            <div className="flex items-end gap-3 justify-start">
+              <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-tl-none shadow-sm flex items-center space-x-2">
+                <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></span>
+                <span className="text-xs text-gray-500 ml-2">
+                  Mendengarkan...
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       {callStatus === CallStatusEnum.IDLE ? (
