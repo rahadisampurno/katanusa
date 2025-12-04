@@ -19,6 +19,8 @@ export const experts: Expert[] = [
     gender: 'wanita',
     isAi: true,
     suku: 'Sunda',
+    accentHints: ['punten', 'mangga', 'atuh', 'mah', 'teh', 'nya'],
+    pitch: 0.2,
     realExpertReferences: [
       {
         id: 'ad6d1a13-62fb-4688-839f-146b950bf1fb',
@@ -66,6 +68,8 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Jawa',
+    accentHints: ['nggih', 'mboten', 'monggo', 'kula', 'sampeyan'],
+    pitch: -0.05,
   },
   {
     id: '2a35197d-501f-47e2-89e2-b249474db03f',
@@ -78,6 +82,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Batak',
+    pitch: -0.15,
   },
   {
     id: 'cc5de100-d413-409a-a7a9-e9f571ae538f',
@@ -95,6 +100,8 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Madura',
+    accentHints: ['engkok', 'tak', 'bhen'],
+    pitch: -0.1,
   },
   {
     id: '213dbe92-cf60-4b7e-930b-c8d8a42019f5',
@@ -107,6 +114,8 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Betawi',
+    accentHints: ['abang', 'ente', 'nih', 'ye', 'lah'],
+    pitch: 0.0,
   },
   {
     id: 'a0ecfc9e-092f-48c1-83be-908f0fbb8706',
@@ -125,6 +134,8 @@ export const experts: Expert[] = [
     gender: 'wanita',
     isAi: true,
     suku: 'Minangkabau',
+    accentHints: ['ndak', 'iyo', 'lah', 'kok', 'dek'],
+    pitch: 0.15,
   },
   {
     id: '9b7a4faa-bf98-48b9-992f-5e77c3b9337a',
@@ -143,6 +154,8 @@ export const experts: Expert[] = [
     gender: 'wanita',
     isAi: true,
     suku: 'Bugis',
+    accentHints: ['ji', 'mi', 'ki'],
+    pitch: 0.1,
   },
   {
     id: 'ad6d1a13-62fb-4688-839f-146b950bf1fb',
@@ -162,6 +175,7 @@ export const experts: Expert[] = [
     isAi: false,
     articles: ['https://bandungbergerak.id/writer/906/hawe-setiawan'],
     suku: 'Sunda',
+    pitch: -0.05,
   },
   {
     id: 'b86a4b79-f7f9-46ec-b276-2461113e2e14',
@@ -180,6 +194,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: false,
     suku: 'Sunda',
+    pitch: -0.05,
   },
   {
     id: '010c4146-2cb2-42cf-860e-cb016e30dd21',
@@ -198,6 +213,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: false,
     suku: 'Jawa',
+    pitch: -0.05,
   },
   {
     id: 'fb20c08c-7997-4dd0-b77f-ed083b059c10',
@@ -216,6 +232,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: false,
     suku: 'Sunda',
+    pitch: -0.05,
   },
   // {
   //   id: 'ac2f5fdb-0a11-4c1b-b486-af2af0ade2f3',
@@ -263,6 +280,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Borneo',
+    pitch: -0.1,
   },
   // {
   //   id: '64310607-8a72-48e5-9db0-2ffb4ce7c566',
@@ -291,6 +309,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Tionghoa',
+    pitch: -0.05,
   },
   // {
   //   id: 'def0953c-e7f1-4a71-9253-9ced8ea9cbfc',
@@ -323,6 +342,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Lampung',
+    pitch: -0.05,
   },
   {
     id: 'c6ce5bb5-b9d1-4e27-b2f7-c9a7b2ca2c21',
@@ -340,6 +360,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Gorontalo',
+    pitch: -0.05,
   },
   // {
   //   id: 'bd9cabb0-9ab0-474e-986a-5fa3ca30a01f',
@@ -362,6 +383,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Nias',
+    pitch: -0.1,
   },
   {
     id: '71b1c0d6-4383-4a0e-953b-270b636a41fa',
@@ -374,6 +396,7 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Buton',
+    pitch: -0.05,
   },
   {
     id: 'dee7b82b-db10-454e-afac-1895baa222e3',
@@ -386,6 +409,7 @@ export const experts: Expert[] = [
     gender: 'wanita',
     isAi: true,
     suku: 'Atoni',
+    pitch: 0.1,
   },
   // {
   //   id: '32266a37-3db1-4927-afb2-bab79fa15162',
@@ -408,5 +432,6 @@ export const experts: Expert[] = [
     gender: 'pria',
     isAi: true,
     suku: 'Kaili',
+    pitch: -0.05,
   },
 ];

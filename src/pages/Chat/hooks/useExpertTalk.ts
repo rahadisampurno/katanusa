@@ -20,6 +20,7 @@ const useExpertTalk = (
     callStatus,
     setCallStatus,
     setLiveTranscript,
+    setIsListening,
     // setIsVideoEnabled,
     // setIsScreenSharing,
   } = useExpertTalkStore();
@@ -119,6 +120,7 @@ const useExpertTalk = (
     }
 
     setLiveTranscript([]);
+    setIsListening(false);
   };
 
   const startCall = async (): Promise<void | null> => {
@@ -141,6 +143,7 @@ const useExpertTalk = (
         onopen: (): void => {
           console.log('Session opened');
           setCallStatus(CallStatusEnum.ACTIVE);
+          setIsListening(true);
           if (!scriptProcessorRef) {
             return;
           }
@@ -166,7 +169,10 @@ const useExpertTalk = (
           }
         },
         onmessage: async (message: LiveServerMessage): Promise<void> => {
-          setIsLoading(true);
+          const hasInput = !!message.serverContent?.inputTranscription;
+          const hasOutput = !!message.serverContent?.outputTranscription;
+          setIsListening(hasInput && !hasOutput);
+          setIsLoading(hasOutput);
           if (message.serverContent?.inputTranscription) {
             const text = message.serverContent.inputTranscription.text;
             const prev = useExpertTalkStore.getState().liveTranscript;
@@ -218,6 +224,7 @@ const useExpertTalk = (
           const base64Audio =
             message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
           if (base64Audio && outputAudioContextRef.current) {
+            setIsListening(false);
             const outputCtx = outputAudioContextRef.current;
             nextAudioStartTimeRef.current = Math.max(
               nextAudioStartTimeRef.current,

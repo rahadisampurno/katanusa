@@ -23,4 +23,9 @@ export interface Expert {
   articles?: string[];
   realExpertReferences?: Expert[];
   suku?: string;
+  voiceName?: string;
+  languageCode?: string;
+  accentHints?: string[];
+  speakingRate?: number;
+  pitch?: number;
 }

@@ -18,7 +18,7 @@ const ChatWindow: React.FC = () => {
   const { data: expert } = useLoaderData();
 
   const { messages, setMessages, isLoading } = useExpertChatStore();
-  const { callStatus, liveTranscript } = useExpertTalkStore();
+  const { callStatus, liveTranscript, isListening } = useExpertTalkStore();
   const { startCall, endCall } = useExpertTalk(expert);
   const { sendMessage } = useChatActions(expert);
 
@@ -110,6 +110,19 @@ const ChatWindow: React.FC = () => {
               <span className="block w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
               <span className="block w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
               <span className="block w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+            </div>
+          </div>
+        )}
+
+        {isListening && callStatus === CallStatusEnum.ACTIVE && (
+          <div className="flex items-end gap-3 justify-start">
+            <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-tl-none shadow-sm flex items-center space-x-2">
+              <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></span>
+              <span className="text-xs text-gray-500 ml-2">
+                Mendengarkan...
+              </span>
             </div>
           </div>
         )}

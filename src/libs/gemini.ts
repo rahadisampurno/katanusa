@@ -11,6 +11,7 @@ import type { ChatMessage } from '../types/chat';
 import { type Expert } from '../types/expert';
 import type { RagContext } from '../types/rag';
 import network from './network';
+import { sanitizeTranscription } from './textSanitizer';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -48,6 +49,20 @@ const getAiResponse = async ({
       .map((item) => item.content)
       .join('\n');
 
+    const accentInstruction =
+      expert.accentHints && expert.accentHints.length > 0
+        ? `Gunakan logat dan pilihan kata yang mencerminkan suku ${expert.suku}. Contoh frasa: ${expert.accentHints.join(', ')}.`
+        : `Gunakan logat yang sesuai dengan suku ${expert.suku}.`;
+
+    const pitchDescriptor =
+      typeof expert.pitch === 'number'
+        ? expert.pitch > 0.1
+          ? 'pitch agak tinggi dan ceria'
+          : expert.pitch < -0.1
+            ? 'pitch sedikit rendah dan tegas'
+            : 'pitch sedang yang natural'
+        : 'pitch natural';
+
     const systemInstruction = `
         Anda adalah Asisten AI dari ${expert.name}, seorang ${expert.role}. ${expert.bio}. berjenis kelamin ${expert.gender}.
         Anda harus selalu berbicara sebagai ${expert.name} (gunakan sudut pandang orang pertama "saya"). 
@@ -59,6 +74,10 @@ const getAiResponse = async ({
         - Jaga agar jawaban tetap ringkas dan mudah dipahami.
         - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
         - Apabila memberikan referensi nama pakar pastikan menjadi tautan URL yang dapat diklik
+
+        ${accentInstruction}
+        Gunakan ${pitchDescriptor} agar intonasi mendekati penutur asli.
+        Hindari karakter non-Latin dan abaikan token non-ucapan seperti <noise>, <hesitation>, atau simbol serupa.
 
         - Gunakan konteks berikut ini untuk menjawab pertanyaan pengguna: ${ragContextText}
         
@@ -149,28 +168,48 @@ const startAiCallSession = async (
 ): Promise<Session> => {
   const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-  const voiceName = expert.gender === 'pria' ? 'Puck' : 'Kore';
+  const voiceName =
+    expert.voiceName ?? (expert.gender === 'pria' ? 'Puck' : 'Kore');
+  // const languageCode = expert.languageCode ?? 'id-ID';
+
+  const accentInstruction =
+    expert.accentHints && expert.accentHints.length > 0
+      ? `Gunakan logat dan pilihan kata yang mencerminkan suku ${expert.suku}. Contoh frasa: ${expert.accentHints.join(', ')}.`
+      : `Gunakan logat yang sesuai dengan suku ${expert.suku}.`;
+
+  const pitchDescriptor =
+    typeof expert.pitch === 'number'
+      ? expert.pitch > 0.1
+        ? 'pitch agak tinggi dan ceria'
+        : expert.pitch < -0.1
+          ? 'pitch sedikit rendah dan tegas'
+          : 'pitch sedang yang natural'
+      : 'pitch natural';
 
   const systemInstruction = `
+    **Persona:**
     Anda adalah Asisten AI dari ${expert.name}, seorang ${expert.role}. ${expert.bio}. 
     Anda harus selalu berbicara sebagai ${expert.name} (gunakan sudut pandang orang pertama "saya"). Anda berjenis kelamin ${expert.gender}
-    Anda harus berbicara dengan logat yang sesuai dengan suku ${expert.suku}
-
-     Aturan: 
-        - Jangan pernah mengungkapkan bahwa Anda adalah seorang AI.
-        - Jangan pernah menjawab apapun diluar keahlian Anda.
-        - Jangan pernah memberikan informasi pribadi Anda.
-        - Jawab pertanyaan pengguna terkait budaya Indonesia dengan ramah, informatif, dan sesuai dengan keahlian Anda (${expert?.specialties?.join(', ')}). 
-        - Jaga agar jawaban tetap ringkas dan mudah dipahami.
-        - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
     
-    [INSTRUKSI PENTING]
+    **Conversational Rules:**
+    - ${accentInstruction}
+    - Gunakan ${pitchDescriptor} agar intonasi mendekati penutur asli.
+    - Jangan pernah mengungkapkan bahwa Anda adalah seorang AI.
+    - Jangan pernah menjawab apapun diluar keahlian Anda.
+    - Jangan pernah memberikan informasi pribadi Anda.
+    - Jawab pertanyaan pengguna terkait budaya Indonesia dengan ramah, informatif, dan sesuai dengan keahlian Anda (${expert?.specialties?.join(', ')}). 
+    - Jaga agar jawaban tetap ringkas dan mudah dipahami.
+    - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
+    - Jawab pertanyaan pengguna dengan ramah dan informatif.    
+    
+    **Additional Rules:**
     Anda memiliki akses ke "searchKnowledgeBase". 
     JANGAN mengarang jawaban untuk pertanyaan spesifik tentang budaya, sejarah, atau data faktual.
     GUNAKAN alat tersebut untuk mencari jawaban yang valid dari database pengetahuan Anda.
     Jika alat memberikan informasi, gunakan informasi tersebut untuk menjawab user secara lisan.
-    
-    Jawab pertanyaan pengguna dengan ramah dan informatif.
+    **Transkripsi & Kebersihan Teks:**
+    - Hindari karakter non-Latin dan abaikan token non-ucapan seperti <noise>, <hesitation>, atau simbol serupa.
+    - Gunakan bahasa Indonesia yang baku namun tetap natural sesuai persona.
     `;
 
   let currentSession: Session | null = null;
@@ -218,11 +257,7 @@ const startAiCallSession = async (
         // 2. Kirim hasil pencarian RAG kembali ke Gemini
         if (currentSession && toolResponses.length > 0) {
           console.log('📤 Sending Tool Response back to AI...');
-          // await currentSession.sendToolResponse({
-          //   toolResponse: {
-          //     functionResponses: toolResponses,
-          //   },
-          // });
+
           currentSession.sendToolResponse({
             functionResponses: toolResponses,
           });
@@ -231,8 +266,16 @@ const startAiCallSession = async (
         }
       }
 
-      // 3. Jika bukan tool call (misal audio biasa), teruskan ke callback UI asli
-      await callbacks.onmessage(message);
+      const m: any = { ...message };
+      if (m.outputAudioTranscription?.text) {
+        m.outputAudioTranscription.text = sanitizeTranscription(
+          m.outputAudioTranscription.text as string,
+        );
+      }
+      if (m.text) {
+        m.text = sanitizeTranscription(m.text as string);
+      }
+      await callbacks.onmessage(m as LiveServerMessage);
     },
   };
 
@@ -242,12 +285,18 @@ const startAiCallSession = async (
     config: {
       tools,
       responseModalities: [Modality.AUDIO],
-      inputAudioTranscription: {},
-      outputAudioTranscription: {},
+      inputAudioTranscription: {
+        // languageCode: 'id',
+      } as any,
+      outputAudioTranscription: {
+        // languageCode: 'id',
+        // enableAutomaticPunctuation: true,
+        // speechHints: buildSpeechHints(expert),
+      } as any,
       systemInstruction,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName } },
-        languageCode: 'id-ID',
+        // languageCode: 'id',
       },
     },
   });
