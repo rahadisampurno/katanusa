@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { v1 } from 'uuid';
 import audio from '../../../libs/audio';
 import gemini from '../../../libs/gemini';
+import { sanitizeTranscription } from '../../../libs/textSanitizer';
 import type { Expert } from '../../../types/expert';
 import useExpertChatStore from './useExpertChatStore';
 import useExpertTalkStore, { CallStatusEnum } from './useExpertTalkStore';
@@ -36,6 +37,10 @@ const useExpertTalk = (
   const nextAudioStartTimeRef = useRef<number>(0);
   const audioSourcesRef = useRef(new Set<AudioBufferSourceNode>());
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const pendingAiTextRef = useRef<string>('');
+  const pendingAudioQueueRef = useRef<string[]>([]);
+  const listenDebounceTimerRef = useRef<number | null>(null);
+  const LISTENING_DEBOUNCE_MS = 700;
   // const videoRef = useRef<HTMLVideoElement>(null);
 
   // const frameIntervalRef = useRef<number | null>(null);
@@ -121,6 +126,12 @@ const useExpertTalk = (
 
     setLiveTranscript([]);
     setIsListening(false);
+    pendingAiTextRef.current = '';
+    pendingAudioQueueRef.current = [];
+    if (listenDebounceTimerRef.current) {
+      window.clearTimeout(listenDebounceTimerRef.current);
+      listenDebounceTimerRef.current = null;
+    }
   };
 
   const startCall = async (): Promise<void | null> => {
@@ -171,8 +182,70 @@ const useExpertTalk = (
         onmessage: async (message: LiveServerMessage): Promise<void> => {
           const hasInput = !!message.serverContent?.inputTranscription;
           const hasOutput = !!message.serverContent?.outputTranscription;
-          setIsListening(hasInput && !hasOutput);
-          setIsLoading(hasOutput);
+          if (hasInput) {
+            setIsListening(true);
+            if (listenDebounceTimerRef.current) {
+              window.clearTimeout(listenDebounceTimerRef.current);
+            }
+            listenDebounceTimerRef.current = window.setTimeout(async () => {
+              setIsListening(false);
+              if (pendingAiTextRef.current) {
+                const prev = useExpertTalkStore.getState().liveTranscript;
+                const last = prev[prev.length - 1];
+                if (last && last.speaker === 'ai') {
+                  setLiveTranscript([
+                    ...prev.slice(0, -1),
+                    {
+                      ...last,
+                      text: pendingAiTextRef.current,
+                      id: v1(),
+                      timestamp: dayjs().format(),
+                    },
+                  ]);
+                } else {
+                  setLiveTranscript([
+                    ...prev,
+                    {
+                      speaker: 'ai',
+                      text: pendingAiTextRef.current,
+                      id: v1(),
+                      timestamp: dayjs().format(),
+                    },
+                  ]);
+                }
+                pendingAiTextRef.current = '';
+              }
+              if (
+                pendingAudioQueueRef.current.length &&
+                outputAudioContextRef.current
+              ) {
+                const outputCtx = outputAudioContextRef.current;
+                for (const base64Audio of pendingAudioQueueRef.current) {
+                  nextAudioStartTimeRef.current = Math.max(
+                    nextAudioStartTimeRef.current,
+                    outputCtx.currentTime,
+                  );
+                  const audioBuffer = await audio.decodeAudioData(
+                    audio.decode(base64Audio),
+                    outputCtx,
+                    24000,
+                    1,
+                  );
+                  const source = outputCtx.createBufferSource();
+                  source.buffer = audioBuffer;
+                  source.connect(outputCtx.destination);
+                  source.addEventListener('ended', () => {
+                    audioSourcesRef.current.delete(source);
+                  });
+                  source.start(nextAudioStartTimeRef.current);
+                  nextAudioStartTimeRef.current += audioBuffer.duration;
+                  audioSourcesRef.current.add(source);
+                }
+                pendingAudioQueueRef.current = [];
+              }
+            }, LISTENING_DEBOUNCE_MS);
+          }
+          setIsLoading(hasOutput && !useExpertTalkStore.getState().isListening);
           if (message.serverContent?.inputTranscription) {
             const text = message.serverContent.inputTranscription.text;
             const prev = useExpertTalkStore.getState().liveTranscript;
@@ -182,7 +255,7 @@ const useExpertTalk = (
                 ...prev.slice(0, -1),
                 {
                   ...last,
-                  text: last.text + (text || ''),
+                  text: sanitizeTranscription(last.text + (text || '')),
                   id: v1(),
                   timestamp: dayjs().format(),
                 },
@@ -192,7 +265,7 @@ const useExpertTalk = (
                 ...prev,
                 {
                   speaker: 'user',
-                  text: text || '',
+                  text: sanitizeTranscription(text || ''),
                   id: v1(),
                   timestamp: dayjs().format(),
                 },
@@ -201,53 +274,67 @@ const useExpertTalk = (
           }
           if (message.serverContent?.outputTranscription) {
             const text = message.serverContent.outputTranscription.text;
-            const prev = useExpertTalkStore.getState().liveTranscript;
-            const last = prev[prev.length - 1];
-            if (last && last.speaker === 'ai') {
-              setLiveTranscript([
-                ...prev.slice(0, -1),
-                { ...last, text: last.text + (text || '') },
-              ]);
+            if (useExpertTalkStore.getState().isListening) {
+              pendingAiTextRef.current = sanitizeTranscription(
+                (pendingAiTextRef.current || '') + (text || ''),
+              );
             } else {
-              setLiveTranscript([
-                ...prev,
-                {
-                  speaker: 'ai',
-                  text: text || '',
-                  id: v1(),
-                  timestamp: dayjs().format(),
-                },
-              ]);
+              const prev = useExpertTalkStore.getState().liveTranscript;
+              const last = prev[prev.length - 1];
+              if (last && last.speaker === 'ai') {
+                setLiveTranscript([
+                  ...prev.slice(0, -1),
+                  {
+                    ...last,
+                    text: sanitizeTranscription(last.text + (text || '')),
+                    id: v1(),
+                    timestamp: dayjs().format(),
+                  },
+                ]);
+              } else {
+                setLiveTranscript([
+                  ...prev,
+                  {
+                    speaker: 'ai',
+                    text: sanitizeTranscription(text || ''),
+                    id: v1(),
+                    timestamp: dayjs().format(),
+                  },
+                ]);
+              }
             }
           }
 
           const base64Audio =
             message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
           if (base64Audio && outputAudioContextRef.current) {
-            setIsListening(false);
-            const outputCtx = outputAudioContextRef.current;
-            nextAudioStartTimeRef.current = Math.max(
-              nextAudioStartTimeRef.current,
-              outputCtx.currentTime,
-            );
+            if (useExpertTalkStore.getState().isListening) {
+              pendingAudioQueueRef.current.push(base64Audio);
+            } else {
+              const outputCtx = outputAudioContextRef.current;
+              nextAudioStartTimeRef.current = Math.max(
+                nextAudioStartTimeRef.current,
+                outputCtx.currentTime,
+              );
 
-            const audioBuffer = await audio.decodeAudioData(
-              audio.decode(base64Audio),
-              outputCtx,
-              24000,
-              1,
-            );
-            const source = outputCtx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(outputCtx.destination);
+              const audioBuffer = await audio.decodeAudioData(
+                audio.decode(base64Audio),
+                outputCtx,
+                24000,
+                1,
+              );
+              const source = outputCtx.createBufferSource();
+              source.buffer = audioBuffer;
+              source.connect(outputCtx.destination);
 
-            source.addEventListener('ended', () => {
-              audioSourcesRef.current.delete(source);
-            });
+              source.addEventListener('ended', () => {
+                audioSourcesRef.current.delete(source);
+              });
 
-            source.start(nextAudioStartTimeRef.current);
-            nextAudioStartTimeRef.current += audioBuffer.duration;
-            audioSourcesRef.current.add(source);
+              source.start(nextAudioStartTimeRef.current);
+              nextAudioStartTimeRef.current += audioBuffer.duration;
+              audioSourcesRef.current.add(source);
+            }
           }
           setIsLoading(false);
         },

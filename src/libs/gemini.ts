@@ -11,7 +11,6 @@ import type { ChatMessage } from '../types/chat';
 import { type Expert } from '../types/expert';
 import type { RagContext } from '../types/rag';
 import network from './network';
-import { sanitizeTranscription } from './textSanitizer';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -267,14 +266,14 @@ const startAiCallSession = async (
       }
 
       const m: any = { ...message };
-      if (m.outputAudioTranscription?.text) {
-        m.outputAudioTranscription.text = sanitizeTranscription(
-          m.outputAudioTranscription.text as string,
-        );
-      }
-      if (m.text) {
-        m.text = sanitizeTranscription(m.text as string);
-      }
+      // if (m.outputAudioTranscription?.text) {
+      //   m.outputAudioTranscription.text = sanitizeTranscription(
+      //     m.outputAudioTranscription.text as string,
+      //   );
+      // }
+      // if (m.text) {
+      //   m.text = sanitizeTranscription(m.text as string);
+      // }
       await callbacks.onmessage(m as LiveServerMessage);
     },
   };
