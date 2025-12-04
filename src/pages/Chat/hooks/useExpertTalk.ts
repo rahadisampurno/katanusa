@@ -23,6 +23,8 @@ const useExpertTalk = (
     setLiveTranscript,
     setIsListening,
     setIsAiSpeaking,
+    // isPushToTalkEnabled,
+    // isPushHoldActive,
     // setIsVideoEnabled,
     // setIsScreenSharing,
   } = useExpertTalkStore();
@@ -131,6 +133,9 @@ const useExpertTalk = (
     setLiveTranscript([]);
     setIsListening(false);
     setIsAiSpeaking(false);
+
+    useExpertTalkStore.getState().resetRagSearching();
+
     pendingAiTextRef.current = '';
     pendingAudioQueueRef.current = [];
     if (listenDebounceTimerRef.current) {
@@ -163,7 +168,7 @@ const useExpertTalk = (
         onopen: (): void => {
           console.log('Session opened');
           setCallStatus(CallStatusEnum.ACTIVE);
-          setIsListening(true);
+          setIsListening(false);
           if (!scriptProcessorRef) {
             return;
           }
@@ -184,10 +189,8 @@ const useExpertTalk = (
                 sumSquares += s * s;
               }
               const rms = Math.sqrt(sumSquares / inputData.length);
-              if (
-                !useExpertTalkStore.getState().isAiSpeaking &&
-                rms > VAD_THRESHOLD
-              ) {
+              const allowInput = !useExpertTalkStore.getState().isAiSpeaking;
+              if (allowInput && rms > VAD_THRESHOLD) {
                 setIsListening(true);
                 if (vadSilenceTimerRef.current) {
                   window.clearTimeout(vadSilenceTimerRef.current);
@@ -197,7 +200,7 @@ const useExpertTalk = (
                   setIsListening(false);
                 }, VAD_SILENCE_MS);
               }
-              if (!useExpertTalkStore.getState().isAiSpeaking) {
+              if (allowInput) {
                 const pcmBlob = audio.createBlob(inputData);
                 sessionPromiseRef.current?.then((session) => {
                   session.sendRealtimeInput({ media: pcmBlob });

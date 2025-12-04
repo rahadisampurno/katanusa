@@ -19,8 +19,13 @@ const ChatWindow: React.FC = () => {
   const { data: expert } = useLoaderData() as { data: Expert };
 
   const { messages, setMessages, isLoading } = useExpertChatStore();
-  const { callStatus, liveTranscript, isListening, isAiSpeaking } =
-    useExpertTalkStore();
+  const {
+    callStatus,
+    liveTranscript,
+    isListening,
+    isAiSpeaking,
+    isRagSearching,
+  } = useExpertTalkStore() as any;
   const { startCall, endCall } = useExpertTalk(expert);
   const { sendMessage } = useChatActions(expert);
 
@@ -41,7 +46,7 @@ const ChatWindow: React.FC = () => {
     return (): void => {
       window.removeEventListener('popstate', () => {});
     };
-  }, [messages, isLoading, liveTranscript]);
+  }, [messages, isLoading, liveTranscript, callStatus]);
 
   const initialMessages = useCallback(() => {
     if (expert) {
@@ -97,7 +102,7 @@ const ChatWindow: React.FC = () => {
           />
         ))}
 
-        {liveTranscript.map((msg) => (
+        {liveTranscript.map((msg: any) => (
           <ChatBubble
             key={msg.id}
             message={msg.text}
@@ -130,6 +135,32 @@ const ChatWindow: React.FC = () => {
               </div>
             </div>
           )}
+
+        {isRagSearching && callStatus === CallStatusEnum.ACTIVE && (
+          <div className="flex items-end gap-3 justify-start mt-2">
+            <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-tl-none shadow-sm flex items-center space-x-2">
+              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce"></span>
+              <span className="text-xs text-gray-500 ml-2">
+                Mencari sumber...
+              </span>
+            </div>
+          </div>
+        )}
+
+        {isRagSearching && callStatus === CallStatusEnum.ACTIVE && (
+          <div className="flex items-end gap-3 justify-start mt-2">
+            <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-tl-none shadow-sm flex items-center space-x-2">
+              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce"></span>
+              <span className="text-xs text-gray-500 ml-2">
+                Mencari sumber...
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {callStatus === CallStatusEnum.IDLE ? (

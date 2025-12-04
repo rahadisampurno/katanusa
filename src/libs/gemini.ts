@@ -9,6 +9,7 @@ import {
   StartSensitivity,
   EndSensitivity,
 } from '@google/genai';
+import useExpertTalkStore from '../pages/Chat/hooks/useExpertTalkStore';
 import type { ChatMessage } from '../types/chat';
 import { type Expert } from '../types/expert';
 import type { RagContext } from '../types/rag';
@@ -221,6 +222,7 @@ const startAiCallSession = async (
     onmessage: async (message: LiveServerMessage) => {
       // 1. Cek apakah Gemini meminta penggunaan Tool (Function Call)
       if (message.toolCall) {
+        useExpertTalkStore.getState().setIsRagSearching(true);
         console.log('🛠️ AI sedang memanggil tool:', message.toolCall);
 
         const functionCalls = message.toolCall.functionCalls;
@@ -262,9 +264,11 @@ const startAiCallSession = async (
           currentSession.sendToolResponse({
             functionResponses: toolResponses,
           });
+          useExpertTalkStore.getState().setIsRagSearching(false);
           // Gemini akan memproses ini dan kemudian mengirim audio baru
           return;
         }
+        useExpertTalkStore.getState().setIsRagSearching(false);
       }
 
       const m: any = { ...message };

@@ -17,12 +17,16 @@ type UseExpertTalkStore = {
   isScreenSharing: boolean;
   isListening: boolean;
   isAiSpeaking: boolean;
+  isRagSearching: boolean;
+  ragSearchingCount: number;
   setIsScreenSharing: (isScreenSharing: boolean) => void;
   setIsVideoEnabled: (isVideoEnabled: boolean) => void;
   setCallStatus: (callStatus: CallStatusEnum) => void;
   setLiveTranscript: (liveTranscript: TranscriptEntry[]) => void;
   setIsListening: (isListening: boolean) => void;
   setIsAiSpeaking: (isAiSpeaking: boolean) => void;
+  setIsRagSearching: (active: boolean) => void;
+  resetRagSearching: () => void;
 };
 
 const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
@@ -32,6 +36,8 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
   isScreenSharing: false,
   isListening: false,
   isAiSpeaking: false,
+  isRagSearching: false,
+  ragSearchingCount: 0,
   setIsScreenSharing(isScreenSharing: boolean): void {
     set((state) => ({
       ...state,
@@ -66,6 +72,25 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
     set((state) => ({
       ...state,
       isAiSpeaking,
+    }));
+  },
+  setIsRagSearching(active: boolean): void {
+    set((state) => {
+      const nextCount = active
+        ? state.ragSearchingCount + 1
+        : Math.max(0, state.ragSearchingCount - 1);
+      return {
+        ...state,
+        ragSearchingCount: nextCount,
+        isRagSearching: nextCount > 0,
+      };
+    });
+  },
+  resetRagSearching(): void {
+    set((state) => ({
+      ...state,
+      ragSearchingCount: 0,
+      isRagSearching: false,
     }));
   },
 }));
