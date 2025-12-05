@@ -301,6 +301,7 @@ const startAiCallSession = async (
             const ragResult = await network.post<RagResult>('/rag-context', {
               chat: args.query,
               profileAi: `Profile ${expert.name}`,
+              isLive: 1,
             });
 
             const ragContextText = ragResult.data.fusion ?? '';

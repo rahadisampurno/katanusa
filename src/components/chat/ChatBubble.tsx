@@ -65,7 +65,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
             </div>
           ))}
           {additional?.source && additional.source.length > 0 && (
-            <div className="flex flex-col items-start w-full gap-1 mt-3">
+            <div className="flex flex-col items-start w-full gap-1 mt-3 overflow-hidden">
               {/* <div className="text-xs bg-blue-500 text-white h-5 w-5 rounded-full flex items-center justify-center gap-1">
                 <Check className="w-4 h-4 inline-block" />
               </div> */}
@@ -76,7 +76,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 {/* {additional.source?.[0]?.url} */}
                 Data ini terverifikasi oleh pakar{' '}
                 <span className="font-bold">
-                  {additional?.experts?.[0]?.name}
+                  {additional?.experts?.map((e) => e.name).join(', ')}
                 </span>
               </div>
             </div>
