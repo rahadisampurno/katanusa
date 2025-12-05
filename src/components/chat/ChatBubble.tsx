@@ -12,6 +12,12 @@ interface ChatBubbleProps {
   additional?: {
     suggestedQuestions?: { label: string; question: string }[];
     source?: TavilyResultType[];
+    experts?: {
+      name: string;
+      role: string;
+      bio: string;
+      specialties: string[];
+    }[];
   };
   onOptionClick?: (question: string) => void;
 }
@@ -59,12 +65,19 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
             </div>
           ))}
           {additional?.source && additional.source.length > 0 && (
-            <div className="flex flex-row items-center w-full gap-1 mt-3">
+            <div className="flex flex-col items-start w-full gap-1 mt-3">
               {/* <div className="text-xs bg-blue-500 text-white h-5 w-5 rounded-full flex items-center justify-center gap-1">
                 <Check className="w-4 h-4 inline-block" />
               </div> */}
-              <div className="text-xs text-gray-500 rounded-2xl font-bold">
-                {additional.source?.[0]?.url}
+              <div className="text-xs text-gray-500 rounded-2xl">
+                Artikel: {additional.source?.[0]?.url}
+              </div>
+              <div className="text-xs text-gray-500 rounded-2xl">
+                {/* {additional.source?.[0]?.url} */}
+                Data ini terverifikasi oleh pakar{' '}
+                <span className="font-bold">
+                  {additional?.experts?.[0]?.name}
+                </span>
               </div>
             </div>
           )}

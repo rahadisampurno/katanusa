@@ -65,6 +65,12 @@ const getAiResponse = async ({
       text: string;
       suggestedQuestions?: { label: string; question: string }[];
       source?: TavilyResultType[];
+      experts?: {
+        name: string;
+        role: string;
+        bio: string;
+        specialties: string[];
+      }[];
     }
   | undefined
 > => {
@@ -102,7 +108,7 @@ const getAiResponse = async ({
         - Jangan pernah memberikan informasi pribadi Anda.
         - Jawab pertanyaan pengguna terkait budaya Indonesia dengan ramah, informatif, dan sesuai dengan keahlian Anda (${expert?.specialties?.join(', ')}). 
         - Jaga agar jawaban tetap ringkas dan mudah dipahami.
-        - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
+        - Selalu memberikan referensi satu atau lebih pakar nyata: ${expert?.realExpertReferences?.map((e) => e.name).join(', ')}.
         - Apabila memberikan referensi nama pakar pastikan menjadi tautan URL yang dapat diklik
 
         **Accent Hints:**
@@ -123,8 +129,13 @@ const getAiResponse = async ({
             { "label": "Label Singkat 2", "question": "Pertanyaan lengkap 2 yang mungkin diajukan user selanjutnya" },
             { "label": "Label Singkat 3", "question": "Pertanyaan lengkap 3 yang mungkin diajukan user selanjutnya" }
           ],
+          "experts": ${expert?.realExpertReferences?.map((e) => ({
+            name: e.name,
+          }))}
         }
         `;
+
+    console.log('systemInstruction', systemInstruction);
 
     // Map our internal chat history to the format expected by the Gemini API.
     // The role for AI messages is 'model'.
@@ -157,7 +168,21 @@ const getAiResponse = async ({
                 },
               },
             },
-            source: { type: Type.STRING },
+            experts: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  role: { type: Type.STRING },
+                  bio: { type: Type.STRING },
+                  specialties: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -180,12 +205,14 @@ const getAiResponse = async ({
       return {
         text: parsed.text ?? '',
         suggestedQuestions: parsed.suggestedQuestions ?? [],
+        experts: parsed.experts ?? [],
         source: ragResult?.data?.tavily?.results ?? [],
       };
     }
     return {
       text: rawText,
       suggestedQuestions: [],
+      experts: [],
       source: ragResult?.data?.tavily?.results ?? [],
     };
   } catch (error) {
