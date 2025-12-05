@@ -16,21 +16,21 @@ const useExpertChatStore = create<UseExpertChatStore>()((set) => ({
   userInput: '',
   isLoading: false,
 
-  setMessages(messages: ChatMessage[]) {
+  setMessages(messages: ChatMessage[]): void {
     set((state) => ({
       ...state,
       messages,
     }));
   },
 
-  setIsLoading(isLoading: boolean) {
+  setIsLoading(isLoading: boolean): void {
     set((state) => ({
       ...state,
       isLoading,
     }));
   },
 
-  setUserInput(userInput: string) {
+  setUserInput(userInput: string): void {
     set((state) => ({
       ...state,
       userInput,

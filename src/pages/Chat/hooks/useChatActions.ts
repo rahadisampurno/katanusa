@@ -57,6 +57,7 @@ const useChatActions = (
           text: aiResponse.text,
           additional: {
             suggestedQuestions: aiResponse.suggestedQuestions,
+            source: aiResponse.source,
           },
           id: v1(),
           timestamp: dayjs().format(),

@@ -44,6 +44,7 @@ const useExpertTalk = (
   const audioBufferQueueRef = useRef<AudioBuffer[]>([]);
   const hasReceivedAiTextRef = useRef<boolean>(false);
   const listenDebounceTimerRef = useRef<number | null>(null);
+  const playbackTimeoutRef = useRef<number | null>(null);
   // const LISTENING_DEBOUNCE_MS = 700;
   // const VAD_THRESHOLD = 0.02;
   // const VAD_SILENCE_MS = 500;
@@ -149,9 +150,17 @@ const useExpertTalk = (
     pendingAiTextRef.current = '';
     audioBufferQueueRef.current = [];
     hasReceivedAiTextRef.current = false;
+    if (playbackTimeoutRef.current) {
+      window.clearTimeout(playbackTimeoutRef.current);
+      playbackTimeoutRef.current = null;
+    }
     if (listenDebounceTimerRef.current) {
       window.clearTimeout(listenDebounceTimerRef.current);
       listenDebounceTimerRef.current = null;
+    }
+    if (playbackTimeoutRef.current) {
+      window.clearTimeout(playbackTimeoutRef.current);
+      playbackTimeoutRef.current = null;
     }
     if (vadSilenceTimerRef.current) {
       window.clearTimeout(vadSilenceTimerRef.current);
@@ -161,6 +170,13 @@ const useExpertTalk = (
 
   const startCall = async (): Promise<void | null> => {
     if (!expert) return null;
+
+    // Prevent multiple simultaneous connection attempts
+    if (useExpertTalkStore.getState().callStatus !== CallStatusEnum.IDLE) {
+      console.warn('Call is already active or connecting.');
+      return null;
+    }
+
     setCallStatus(CallStatusEnum.CONNECTING);
     setLiveTranscript([]);
 
@@ -190,12 +206,33 @@ const useExpertTalk = (
         return;
       }
 
+      // Cleanup previous recognition instance if exists
+      if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.onend = null;
+        speechRecognitionRef.current.stop();
+        speechRecognitionRef.current = null;
+      }
+
       const recognition = new SpeechRecognition();
       recognition.lang = 'id-ID';
       recognition.continuous = true;
       recognition.interimResults = true;
 
       speechRecognitionRef.current = recognition;
+
+      // Cleanup previous AudioContexts
+      if (inputAudioContextRef.current) {
+        if (inputAudioContextRef.current.state !== 'closed') {
+          await inputAudioContextRef.current.close();
+        }
+        inputAudioContextRef.current = null;
+      }
+      if (outputAudioContextRef.current) {
+        if (outputAudioContextRef.current.state !== 'closed') {
+          await outputAudioContextRef.current.close();
+        }
+        outputAudioContextRef.current = null;
+      }
 
       // Setup Output Audio (untuk TTS dari Gemini)
       outputAudioContextRef.current = new (window.AudioContext ||
@@ -207,6 +244,18 @@ const useExpertTalk = (
 
       const callbacks = {
         onopen: (): void => {
+          // Fix Race Condition: Check if call was cancelled during connection
+          if (
+            useExpertTalkStore.getState().callStatus !==
+            CallStatusEnum.CONNECTING
+          ) {
+            console.log(
+              'Session opened but call was cancelled. Closing session.',
+            );
+            endCall();
+            return;
+          }
+
           console.log('Session opened');
           setCallStatus(CallStatusEnum.ACTIVE);
           setIsListening(false);
@@ -219,6 +268,12 @@ const useExpertTalk = (
             if (!outputAudioContextRef.current) return;
             const outputCtx = outputAudioContextRef.current;
 
+            // Clear existing playback timeout (if any) to prevent premature restart
+            if (playbackTimeoutRef.current) {
+              window.clearTimeout(playbackTimeoutRef.current);
+              playbackTimeoutRef.current = null;
+            }
+
             if (nextAudioStartTimeRef.current < outputCtx.currentTime) {
               nextAudioStartTimeRef.current = outputCtx.currentTime;
             }
@@ -228,23 +283,56 @@ const useExpertTalk = (
             source.connect(outputCtx.destination);
             setIsAiSpeaking(true);
 
+            // Stop recognition saat AI mulai bicara agar tidak mendengar suaranya sendiri
+            if (
+              speechRecognitionRef.current &&
+              useExpertTalkStore.getState().isListening
+            ) {
+              // Gunakan abort() untuk segera menghentikan dan membuang buffer audio saat ini
+              speechRecognitionRef.current.abort();
+            }
+
             source.addEventListener('ended', () => {
               audioSourcesRef.current.delete(source);
               if (audioSourcesRef.current.size === 0) {
-                setIsAiSpeaking(false);
-                if (pendingAiTextRef.current) {
-                  const prev = useExpertTalkStore.getState().liveTranscript;
-                  setLiveTranscript([
-                    ...prev,
-                    {
-                      speaker: 'ai',
-                      text: pendingAiTextRef.current,
-                      id: v1(),
-                      timestamp: dayjs().format(),
-                    },
-                  ]);
-                  pendingAiTextRef.current = '';
-                }
+                // Delay restart to avoid echo tail
+                playbackTimeoutRef.current = window.setTimeout(() => {
+                  if (
+                    useExpertTalkStore.getState().callStatus !==
+                    CallStatusEnum.ACTIVE
+                  ) {
+                    return;
+                  }
+
+                  setIsAiSpeaking(false);
+
+                  // Restart recognition setelah AI selesai bicara dan delay echo selesai
+                  if (
+                    speechRecognitionRef.current &&
+                    useExpertTalkStore.getState().callStatus ===
+                      CallStatusEnum.ACTIVE
+                  ) {
+                    try {
+                      speechRecognitionRef.current.start();
+                    } catch (error) {
+                      console.warn('Failed to restart recognition:', error);
+                    }
+                  }
+
+                  if (pendingAiTextRef.current) {
+                    const prev = useExpertTalkStore.getState().liveTranscript;
+                    setLiveTranscript([
+                      ...prev,
+                      {
+                        speaker: 'ai',
+                        text: pendingAiTextRef.current,
+                        id: v1(),
+                        timestamp: dayjs().format(),
+                      },
+                    ]);
+                    pendingAiTextRef.current = '';
+                  }
+                }, 1200); // 1.2s delay for echo safety on laptops
               }
             });
 
@@ -325,6 +413,12 @@ const useExpertTalk = (
       sessionPromiseRef.current = gemini.startAiCallSession(expert, callbacks);
       const session = (await sessionPromiseRef?.current) as Session;
 
+      // Ensure session is closed if call was cancelled during await
+      if (useExpertTalkStore.getState().callStatus === CallStatusEnum.IDLE) {
+        if (session) session.close();
+        return;
+      }
+
       // Speech Recognition Event Handlers
       recognition.onresult = (event: any): void => {
         // Jangan proses input jika AI sedang bicara (opsional, untuk mencegah interupsi yang tidak diinginkan)
@@ -382,10 +476,16 @@ const useExpertTalk = (
 
       recognition.onend = (): void => {
         // Restart recognition jika status masih ACTIVE (continuous loop)
+        // DAN jika AI TIDAK sedang bicara (karena kita stop manual saat AI bicara)
         if (
-          useExpertTalkStore.getState().callStatus === CallStatusEnum.ACTIVE
+          useExpertTalkStore.getState().callStatus === CallStatusEnum.ACTIVE &&
+          !useExpertTalkStore.getState().isAiSpeaking
         ) {
-          recognition.start();
+          try {
+            recognition.start();
+          } catch (error) {
+            console.warn('Failed to restart recognition:', error);
+          }
         }
       };
     } catch (error) {

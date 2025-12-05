@@ -3,6 +3,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '../../libs/utils';
+import type { TavilyResultType } from '../../types/rag';
 
 interface ChatBubbleProps {
   message: string;
@@ -10,6 +11,7 @@ interface ChatBubbleProps {
   avatarUrl?: string;
   additional?: {
     suggestedQuestions?: { label: string; question: string }[];
+    source?: TavilyResultType[];
   };
   onOptionClick?: (question: string) => void;
 }
@@ -45,17 +47,22 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[70%]">
         <div
           className={cn(
-            'p-4 rounded-2xl text-sm leading-relaxed shadow-sm break-words',
+            'p-4 rounded-2xl text-sm leading-relaxed shadow-sm break-words relative',
             isUser
               ? 'bg-blue-100 text-gray-800 rounded-tr-none border border-blue-200'
               : 'bg-white text-gray-800 rounded-tl-none border border-gray-200',
           )}
         >
           {message.split('\n').map((line, i) => (
-            <div key={i} className={i > 0 ? 'mt-2 overflow-hidden' : ''}>
+            <div key={i} className={i > 0 ? 'w-full' : ''}>
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{line}</ReactMarkdown>
             </div>
           ))}
+          {additional?.source && additional.source.length > 0 && (
+            <div className="text-xs text-gray-500 rounded-2xl mt-3">
+              Sumber: {additional.source?.[0]?.url}
+            </div>
+          )}
         </div>
 
         {/* Suggested Questions */}

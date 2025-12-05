@@ -18,7 +18,8 @@ const LandingPage = (): JSX.Element => {
         <Navbar />
         <img
           alt="bg-utama"
-          src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-utama.webp"
+          // src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-utama.webp"
+          src="/assets/bg-utama.webp"
           className="w-full h-full object-cover hidden md:block"
         />
         <div className="absolute z-5 top-0 left-0 right-0 bottom-0">
@@ -52,7 +53,8 @@ const LandingPage = (): JSX.Element => {
       <section className="relative min-h-[50vh] bg-[#1E315A] overflow-hidden">
         <img
           alt="bg-why-katanusa"
-          src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-why-katanusa.png"
+          // src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-why-katanusa.png"
+          src="/assets/bg-why-katanusa.png"
           className="w-195 object-contain relative md:absolute md:bottom-0 md:left-0"
         />
         <div className="flex flex-col md:flex-row justify-between min-h-[50vh] relative z-10">

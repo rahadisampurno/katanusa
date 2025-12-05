@@ -12,7 +12,7 @@ import {
 import useExpertTalkStore from '../pages/Chat/hooks/useExpertTalkStore';
 import type { ChatMessage } from '../types/chat';
 import { type Expert } from '../types/expert';
-import type { RagContext } from '../types/rag';
+import type { RagResult, TavilyResultType } from '../types/rag';
 import network from './network';
 import { sanitizeTranscription } from './textSanitizer';
 
@@ -26,6 +26,8 @@ if (!API_KEY) {
     'Maaf, layanan AI saat ini tidak tersedia karena masalah konfigurasi. Silakan coba lagi nanti.',
   );
 }
+
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const tools: Tool[] = [
   {
@@ -59,29 +61,21 @@ const getAiResponse = async ({
   userMessage: string;
   chatHistory: ChatMessage[];
 }): Promise<
-  | { text: string; suggestedQuestions?: { label: string; question: string }[] }
+  | {
+      text: string;
+      suggestedQuestions?: { label: string; question: string }[];
+      source?: TavilyResultType[];
+    }
   | undefined
 > => {
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
-
   try {
     const model = 'gemini-2.5-flash';
 
-    const ragContext = await network.post<RagContext[]>('/rag-context', {
+    const ragResult = await network.post<RagResult>('/rag-context', {
       chat: userMessage,
     });
 
-    // Optimasi: Urutkan berdasarkan similarity dan ambil top 5
-    const sortedContext = ragContext.data
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 5);
-
-    const ragContextText = sortedContext
-      .map(
-        (item) =>
-          `[Relevansi: ${(item.similarity * 100).toFixed(1)}%]\n${item.content}`,
-      )
-      .join('\n\n---\n\n');
+    const ragContextText = ragResult?.data?.fusion || '';
 
     const accentInstruction =
       expert.accentHints && expert.accentHints.length > 0
@@ -110,10 +104,12 @@ const getAiResponse = async ({
         - Apabila memberikan referensi nama pakar pastikan menjadi tautan URL yang dapat diklik
 
         ${accentInstruction}
+
         Gunakan ${pitchDescriptor} agar intonasi mendekati penutur asli.
         Hindari karakter non-Latin dan abaikan token non-ucapan seperti <noise>, <hesitation>, atau simbol serupa.
 
-        - Gunakan informasi dari KNOWLEDGE BASE berikut untuk menjawab pertanyaan pengguna. Prioritaskan informasi dengan skor relevansi tinggi:
+        - Gunakan informasi dari KNOWLEDGE BASE berikut untuk menjawab pertanyaan pengguna. Prioritaskan informasi dari: ${ragContextText}
+        **Context:**
         ${ragContextText}
         
         FORMAT RESPONSE HARUS JSON:
@@ -123,7 +119,7 @@ const getAiResponse = async ({
             { "label": "Label Singkat 1", "question": "Pertanyaan lengkap 1 yang mungkin diajukan user selanjutnya" },
             { "label": "Label Singkat 2", "question": "Pertanyaan lengkap 2 yang mungkin diajukan user selanjutnya" },
             { "label": "Label Singkat 3", "question": "Pertanyaan lengkap 3 yang mungkin diajukan user selanjutnya" }
-          ]
+          ],
         }
         `;
 
@@ -158,6 +154,7 @@ const getAiResponse = async ({
                 },
               },
             },
+            source: { type: Type.STRING },
           },
         },
       },
@@ -180,9 +177,14 @@ const getAiResponse = async ({
       return {
         text: parsed.text ?? '',
         suggestedQuestions: parsed.suggestedQuestions ?? [],
+        source: ragResult?.data?.tavily?.results ?? [],
       };
     }
-    return { text: rawText, suggestedQuestions: [] };
+    return {
+      text: rawText,
+      suggestedQuestions: [],
+      source: ragResult?.data?.tavily?.results ?? [],
+    };
   } catch (error) {
     console.error('Error getting AI response:', error);
     return {
@@ -202,8 +204,6 @@ const startAiCallSession = async (
   expert: Expert,
   callbacks: AiCallCallbacks,
 ): Promise<Session> => {
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
-
   const voiceName =
     expert.voiceName ?? (expert.gender === 'pria' ? 'Puck' : 'Kore');
   // const languageCode = expert.languageCode ?? 'id-ID';
@@ -268,23 +268,11 @@ const startAiCallSession = async (
             const args = call.args as { query: string };
             console.log(`🔍 Searching RAG for: ${args.query}`);
 
-            const ragContext = await network.post<RagContext[]>(
-              '/rag-context',
-              {
-                chat: args.query,
-              },
-            );
+            const ragResult = await network.post<RagResult>('/rag-context', {
+              chat: args.query,
+            });
 
-            const sortedContext = ragContext.data
-              .sort((a, b) => b.similarity - a.similarity)
-              .slice(0, 3); // Ambil top 3 untuk respons audio yang ringkas
-
-            const ragContextText = sortedContext
-              .map(
-                (item) =>
-                  `[Relevansi: ${(item.similarity * 100).toFixed(1)}%]\n${item.content}`,
-              )
-              .join('\n\n---\n\n');
+            const ragContextText = ragResult.data.fusion ?? '';
 
             toolResponses.push({
               id: call.id,
