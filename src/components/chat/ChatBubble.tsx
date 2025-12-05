@@ -59,8 +59,13 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
             </div>
           ))}
           {additional?.source && additional.source.length > 0 && (
-            <div className="text-xs text-gray-500 rounded-2xl mt-3">
-              Sumber: {additional.source?.[0]?.url}
+            <div className="flex flex-row items-center w-full gap-1 mt-3">
+              {/* <div className="text-xs bg-blue-500 text-white h-5 w-5 rounded-full flex items-center justify-center gap-1">
+                <Check className="w-4 h-4 inline-block" />
+              </div> */}
+              <div className="text-xs text-gray-500 rounded-2xl font-bold">
+                {additional.source?.[0]?.url}
+              </div>
             </div>
           )}
         </div>

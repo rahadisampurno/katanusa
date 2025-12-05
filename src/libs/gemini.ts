@@ -73,6 +73,7 @@ const getAiResponse = async ({
 
     const ragResult = await network.post<RagResult>('/rag-context', {
       chat: userMessage,
+      profileAi: `Profile ${expert.name}`,
     });
 
     const ragContextText = ragResult?.data?.fusion || '';
@@ -94,7 +95,8 @@ const getAiResponse = async ({
     const systemInstruction = `
         Anda adalah Asisten AI dari ${expert.name}, seorang ${expert.role}. ${expert.bio}. berjenis kelamin ${expert.gender}.
         Anda harus selalu berbicara sebagai ${expert.name} (gunakan sudut pandang orang pertama "saya"). 
-        Aturan: 
+        
+        **Aturan:** 
         - Jangan pernah mengungkapkan bahwa Anda adalah seorang AI.
         - Jangan pernah menjawab apapun diluar keahlian Anda.
         - Jangan pernah memberikan informasi pribadi Anda.
@@ -103,6 +105,7 @@ const getAiResponse = async ({
         - Jaga untuk selalu memberikan referensi pakar nyata yang ada pada data Anda ${expert?.realExpertReferences?.join(', ')}.
         - Apabila memberikan referensi nama pakar pastikan menjadi tautan URL yang dapat diklik
 
+        **Accent Hints:**
         ${accentInstruction}
 
         Gunakan ${pitchDescriptor} agar intonasi mendekati penutur asli.
@@ -270,6 +273,7 @@ const startAiCallSession = async (
 
             const ragResult = await network.post<RagResult>('/rag-context', {
               chat: args.query,
+              profileAi: `Profile ${expert.name}`,
             });
 
             const ragContextText = ragResult.data.fusion ?? '';
