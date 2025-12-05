@@ -14,6 +14,7 @@ import type { ChatMessage } from '../types/chat';
 import { type Expert } from '../types/expert';
 import type { RagContext } from '../types/rag';
 import network from './network';
+import { sanitizeTranscription } from './textSanitizer';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -25,6 +26,29 @@ if (!API_KEY) {
     'Maaf, layanan AI saat ini tidak tersedia karena masalah konfigurasi. Silakan coba lagi nanti.',
   );
 }
+
+const tools: Tool[] = [
+  {
+    functionDeclarations: [
+      {
+        name: 'searchKnowledgeBase',
+        description:
+          'Gunakan alat ini untuk mencari informasi spesifik, fakta budaya, sejarah, atau filosofi yang berkaitan dengan keahlian Anda jika Anda tidak yakin atau membutuhkan detail akurat.',
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            query: {
+              type: Type.STRING,
+              description:
+                'Kata kunci atau pertanyaan untuk dicari di database pengetahuan.',
+            },
+          },
+          required: ['query'],
+        },
+      },
+    ],
+  },
+];
 
 const getAiResponse = async ({
   expert,
@@ -47,9 +71,17 @@ const getAiResponse = async ({
       chat: userMessage,
     });
 
-    const ragContextText = ragContext.data
-      .map((item) => item.content)
-      .join('\n');
+    // Optimasi: Urutkan berdasarkan similarity dan ambil top 5
+    const sortedContext = ragContext.data
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, 5);
+
+    const ragContextText = sortedContext
+      .map(
+        (item) =>
+          `[Relevansi: ${(item.similarity * 100).toFixed(1)}%]\n${item.content}`,
+      )
+      .join('\n\n---\n\n');
 
     const accentInstruction =
       expert.accentHints && expert.accentHints.length > 0
@@ -81,7 +113,8 @@ const getAiResponse = async ({
         Gunakan ${pitchDescriptor} agar intonasi mendekati penutur asli.
         Hindari karakter non-Latin dan abaikan token non-ucapan seperti <noise>, <hesitation>, atau simbol serupa.
 
-        - Gunakan konteks berikut ini untuk menjawab pertanyaan pengguna: ${ragContextText}
+        - Gunakan informasi dari KNOWLEDGE BASE berikut untuk menjawab pertanyaan pengguna. Prioritaskan informasi dengan skor relevansi tinggi:
+        ${ragContextText}
         
         FORMAT RESPONSE HARUS JSON:
         {
@@ -105,7 +138,28 @@ const getAiResponse = async ({
       model,
       config: {
         systemInstruction,
-        responseMimeType: 'application/json',
+        tools: [
+          {
+            googleSearch: {},
+          },
+        ],
+        temperature: expert.temperature ?? 0.2,
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            text: { type: Type.STRING },
+            suggestedQuestions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  question: { type: Type.STRING },
+                },
+              },
+            },
+          },
+        },
       },
       history,
     });
@@ -114,18 +168,21 @@ const getAiResponse = async ({
       message: userMessage,
     });
 
-    console.log('response: ', response);
-
-    if (response.text) {
-      try {
-        const parsed = JSON.parse(response.text);
-        return parsed;
-      } catch (e) {
-        console.error('Error parsing JSON response', e);
-        return { text: response.text };
+    const rawText = response.text || '';
+    let parsed: any = null;
+    if (rawText) {
+      const m = rawText.match(/\{[\s\S]*\}/);
+      if (m) {
+        parsed = JSON.parse(m[0]);
       }
     }
-    return undefined;
+    if (parsed && typeof parsed === 'object') {
+      return {
+        text: parsed.text ?? '',
+        suggestedQuestions: parsed.suggestedQuestions ?? [],
+      };
+    }
+    return { text: rawText, suggestedQuestions: [] };
   } catch (error) {
     console.error('Error getting AI response:', error);
     return {
@@ -140,29 +197,6 @@ export interface AiCallCallbacks {
   onerror: (e: ErrorEvent) => void;
   onclose: (e: CloseEvent) => void;
 }
-
-const tools: Tool[] = [
-  {
-    functionDeclarations: [
-      {
-        name: 'searchKnowledgeBase',
-        description:
-          'Gunakan alat ini untuk mencari informasi spesifik, fakta budaya, sejarah, atau filosofi yang berkaitan dengan keahlian Anda jika Anda tidak yakin atau membutuhkan detail akurat.',
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            query: {
-              type: Type.STRING,
-              description:
-                'Kata kunci atau pertanyaan untuk dicari di database pengetahuan.',
-            },
-          },
-          required: ['query'],
-        },
-      },
-    ],
-  },
-];
 
 const startAiCallSession = async (
   expert: Expert,
@@ -241,9 +275,16 @@ const startAiCallSession = async (
               },
             );
 
-            const ragContextText = ragContext.data
-              .map((item) => item.content)
-              .join('\n');
+            const sortedContext = ragContext.data
+              .sort((a, b) => b.similarity - a.similarity)
+              .slice(0, 3); // Ambil top 3 untuk respons audio yang ringkas
+
+            const ragContextText = sortedContext
+              .map(
+                (item) =>
+                  `[Relevansi: ${(item.similarity * 100).toFixed(1)}%]\n${item.content}`,
+              )
+              .join('\n\n---\n\n');
 
             toolResponses.push({
               id: call.id,
@@ -272,14 +313,14 @@ const startAiCallSession = async (
       }
 
       const m: any = { ...message };
-      // if (m.outputAudioTranscription?.text) {
-      //   m.outputAudioTranscription.text = sanitizeTranscription(
-      //     m.outputAudioTranscription.text as string,
-      //   );
-      // }
-      // if (m.text) {
-      //   m.text = sanitizeTranscription(m.text as string);
-      // }
+      if (m.outputAudioTranscription?.text) {
+        m.outputAudioTranscription.text = sanitizeTranscription(
+          m.outputAudioTranscription.text as string,
+        );
+      }
+      if (m.text) {
+        m.text = sanitizeTranscription(m.text as string);
+      }
       await callbacks.onmessage(m as LiveServerMessage);
     },
   };
@@ -290,6 +331,9 @@ const startAiCallSession = async (
     config: {
       tools,
       responseModalities: [Modality.AUDIO],
+      // generationConfig: {
+      //   temperature: expert.temperature ?? 0.2,
+      // },
 
       realtimeInputConfig: {
         automaticActivityDetection: {
@@ -301,12 +345,10 @@ const startAiCallSession = async (
         },
       },
       inputAudioTranscription: {
-        // languageCode: 'id',
+        // languageCode: 'id-ID',
       } as any,
       outputAudioTranscription: {
         // languageCode: 'id',
-        // enableAutomaticPunctuation: true,
-        // speechHints: buildSpeechHints(expert),
       } as any,
       systemInstruction,
       speechConfig: {

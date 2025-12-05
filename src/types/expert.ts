@@ -29,4 +29,5 @@ export interface Expert {
   speakingRate?: number;
   pitch?: number;
   greeting?: string;
+  temperature?: number;
 }

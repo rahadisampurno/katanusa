@@ -1,4 +1,4 @@
-import { LiveServerMessage } from '@google/genai';
+import { LiveServerMessage, Session } from '@google/genai';
 import dayjs from 'dayjs';
 import { useRef } from 'react';
 import { v1 } from 'uuid';
@@ -41,11 +41,12 @@ const useExpertTalk = (
   const audioSourcesRef = useRef(new Set<AudioBufferSourceNode>());
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const pendingAiTextRef = useRef<string>('');
-  const pendingAudioQueueRef = useRef<string[]>([]);
+  const audioBufferQueueRef = useRef<AudioBuffer[]>([]);
+  const hasReceivedAiTextRef = useRef<boolean>(false);
   const listenDebounceTimerRef = useRef<number | null>(null);
-  const LISTENING_DEBOUNCE_MS = 700;
-  const VAD_THRESHOLD = 0.02;
-  const VAD_SILENCE_MS = 500;
+  // const LISTENING_DEBOUNCE_MS = 700;
+  // const VAD_THRESHOLD = 0.02;
+  // const VAD_SILENCE_MS = 500;
   const vadSilenceTimerRef = useRef<number | null>(null);
   // const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -67,6 +68,9 @@ const useExpertTalk = (
   //   setIsScreenSharing(false);
   // };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const speechRecognitionRef = useRef<any>(null);
+
   const endCall = async (): Promise<void> => {
     // stopVideoStream();
     setIsLoading(false);
@@ -77,6 +81,12 @@ const useExpertTalk = (
         .catch((e) =>
           console.warn('Session might have already failed to connect:', e),
         );
+    }
+
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+      speechRecognitionRef.current.onend = null;
+      speechRecognitionRef.current = null;
     }
 
     if (mediaStreamRef.current) {
@@ -137,7 +147,8 @@ const useExpertTalk = (
     useExpertTalkStore.getState().resetRagSearching();
 
     pendingAiTextRef.current = '';
-    pendingAudioQueueRef.current = [];
+    audioBufferQueueRef.current = [];
+    hasReceivedAiTextRef.current = false;
     if (listenDebounceTimerRef.current) {
       window.clearTimeout(listenDebounceTimerRef.current);
       listenDebounceTimerRef.current = null;
@@ -153,89 +164,76 @@ const useExpertTalk = (
     setCallStatus(CallStatusEnum.CONNECTING);
     setLiveTranscript([]);
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStreamRef.current = stream;
+    navigator.mediaDevices
+      .enumerateDevices()
+      .then((devices) => {
+        devices.forEach((device) => {
+          console.log(
+            `${device.kind}: ${device.label} id = ${device.deviceId}`,
+          );
+        });
+      })
+      .catch((err) => {
+        console.error(`${err.name}: ${err.message}`);
+      });
 
-      inputAudioContextRef.current = new (window.AudioContext ||
-        (window as any).webkitAudioContext)({ sampleRate: 16000 });
+    try {
+      // Inisialisasi Speech Recognition
+      const SpeechRecognition =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        alert(
+          'Browser Anda tidak mendukung fitur Speech Recognition. Silakan gunakan Chrome atau Edge.',
+        );
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'id-ID';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      speechRecognitionRef.current = recognition;
+
+      // Setup Output Audio (untuk TTS dari Gemini)
       outputAudioContextRef.current = new (window.AudioContext ||
         (window as any).webkitAudioContext)({ sampleRate: 24000 });
       nextAudioStartTimeRef.current = 0;
       audioSourcesRef.current.clear();
+      audioBufferQueueRef.current = [];
+      hasReceivedAiTextRef.current = false;
 
       const callbacks = {
         onopen: (): void => {
           console.log('Session opened');
           setCallStatus(CallStatusEnum.ACTIVE);
           setIsListening(false);
-          if (!scriptProcessorRef) {
-            return;
-          }
-          const source =
-            inputAudioContextRef.current?.createMediaStreamSource(stream);
-          const scriptProcessor =
-            inputAudioContextRef.current?.createScriptProcessor(4096, 1, 1) ||
-            null;
-          scriptProcessorRef.current = scriptProcessor;
 
-          if (scriptProcessor && inputAudioContextRef.current) {
-            scriptProcessor.onaudioprocess = (audioProcessingEvent): void => {
-              const inputData =
-                audioProcessingEvent.inputBuffer.getChannelData(0);
-              let sumSquares = 0;
-              for (let i = 0; i < inputData.length; i++) {
-                const s = inputData[i];
-                sumSquares += s * s;
-              }
-              const rms = Math.sqrt(sumSquares / inputData.length);
-              const allowInput = !useExpertTalkStore.getState().isAiSpeaking;
-              if (allowInput && rms > VAD_THRESHOLD) {
-                setIsListening(true);
-                if (vadSilenceTimerRef.current) {
-                  window.clearTimeout(vadSilenceTimerRef.current);
-                  vadSilenceTimerRef.current = null;
-                }
-                vadSilenceTimerRef.current = window.setTimeout(() => {
-                  setIsListening(false);
-                }, VAD_SILENCE_MS);
-              }
-              if (allowInput) {
-                const pcmBlob = audio.createBlob(inputData);
-                sessionPromiseRef.current?.then((session) => {
-                  session.sendRealtimeInput({ media: pcmBlob });
-                });
-              }
-            };
-
-            source?.connect(scriptProcessor);
-            scriptProcessor.connect(inputAudioContextRef.current.destination);
-          }
+          // Start Speech Recognition setelah sesi Gemini siap
+          recognition.start();
         },
         onmessage: async (message: LiveServerMessage): Promise<void> => {
-          const hasInput = !!message.serverContent?.inputTranscription;
-          const hasOutput = !!message.serverContent?.outputTranscription;
-          if (hasInput) {
-            setIsListening(true);
-            if (listenDebounceTimerRef.current) {
-              window.clearTimeout(listenDebounceTimerRef.current);
+          const playAudioBuffer = (audioBuffer: AudioBuffer): void => {
+            if (!outputAudioContextRef.current) return;
+            const outputCtx = outputAudioContextRef.current;
+
+            if (nextAudioStartTimeRef.current < outputCtx.currentTime) {
+              nextAudioStartTimeRef.current = outputCtx.currentTime;
             }
-            listenDebounceTimerRef.current = window.setTimeout(async () => {
-              setIsListening(false);
-              if (pendingAiTextRef.current) {
-                const prev = useExpertTalkStore.getState().liveTranscript;
-                const last = prev[prev.length - 1];
-                if (last && last.speaker === 'ai') {
-                  setLiveTranscript([
-                    ...prev.slice(0, -1),
-                    {
-                      ...last,
-                      text: pendingAiTextRef.current,
-                      id: v1(),
-                      timestamp: dayjs().format(),
-                    },
-                  ]);
-                } else {
+
+            const source = outputCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(outputCtx.destination);
+            setIsAiSpeaking(true);
+
+            source.addEventListener('ended', () => {
+              audioSourcesRef.current.delete(source);
+              if (audioSourcesRef.current.size === 0) {
+                setIsAiSpeaking(false);
+                if (pendingAiTextRef.current) {
+                  const prev = useExpertTalkStore.getState().liveTranscript;
                   setLiveTranscript([
                     ...prev,
                     {
@@ -245,68 +243,20 @@ const useExpertTalk = (
                       timestamp: dayjs().format(),
                     },
                   ]);
+                  pendingAiTextRef.current = '';
                 }
-                pendingAiTextRef.current = '';
               }
-              if (
-                pendingAudioQueueRef.current.length &&
-                outputAudioContextRef.current
-              ) {
-                const outputCtx = outputAudioContextRef.current;
-                for (const base64Audio of pendingAudioQueueRef.current) {
-                  nextAudioStartTimeRef.current = Math.max(
-                    nextAudioStartTimeRef.current,
-                    outputCtx.currentTime,
-                  );
-                  const audioBuffer = await audio.decodeAudioData(
-                    audio.decode(base64Audio),
-                    outputCtx,
-                    24000,
-                    1,
-                  );
-                  const source = outputCtx.createBufferSource();
-                  source.buffer = audioBuffer;
-                  source.connect(outputCtx.destination);
-                  source.addEventListener('ended', () => {
-                    audioSourcesRef.current.delete(source);
-                  });
-                  source.start(nextAudioStartTimeRef.current);
-                  nextAudioStartTimeRef.current += audioBuffer.duration;
-                  audioSourcesRef.current.add(source);
-                }
-                pendingAudioQueueRef.current = [];
-              }
-            }, LISTENING_DEBOUNCE_MS);
-          }
-          setIsLoading(hasOutput && !useExpertTalkStore.getState().isListening);
-          if (message.serverContent?.inputTranscription) {
-            const text = message.serverContent.inputTranscription.text;
-            const prev = useExpertTalkStore.getState().liveTranscript;
-            const last = prev[prev.length - 1];
-            if (last && last.speaker === 'user') {
-              setLiveTranscript([
-                ...prev.slice(0, -1),
-                {
-                  ...last,
-                  text: sanitizeTranscription(last.text + (text || '')),
-                  id: v1(),
-                  timestamp: dayjs().format(),
-                },
-              ]);
-            } else {
-              setLiveTranscript([
-                ...prev,
-                {
-                  speaker: 'user',
-                  text: sanitizeTranscription(text || ''),
-                  id: v1(),
-                  timestamp: dayjs().format(),
-                },
-              ]);
-            }
-          }
+            });
+
+            source.start(nextAudioStartTimeRef.current);
+            nextAudioStartTimeRef.current += audioBuffer.duration;
+            audioSourcesRef.current.add(source);
+          };
+
           if (message.serverContent?.outputTranscription) {
             const text = message.serverContent.outputTranscription.text;
+            hasReceivedAiTextRef.current = true;
+
             if (useExpertTalkStore.getState().isListening) {
               pendingAiTextRef.current = sanitizeTranscription(
                 (pendingAiTextRef.current || '') + (text || ''),
@@ -336,41 +286,28 @@ const useExpertTalk = (
                 ]);
               }
             }
+
+            if (audioBufferQueueRef.current.length > 0) {
+              audioBufferQueueRef.current.forEach(playAudioBuffer);
+              audioBufferQueueRef.current = [];
+            }
           }
 
           const base64Audio =
             message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
           if (base64Audio && outputAudioContextRef.current) {
-            if (useExpertTalkStore.getState().isListening) {
-              pendingAudioQueueRef.current.push(base64Audio);
+            const outputCtx = outputAudioContextRef.current;
+            const audioBuffer = await audio.decodeAudioData(
+              audio.decode(base64Audio),
+              outputCtx,
+              24000,
+              1,
+            );
+
+            if (hasReceivedAiTextRef.current) {
+              playAudioBuffer(audioBuffer);
             } else {
-              const outputCtx = outputAudioContextRef.current;
-              nextAudioStartTimeRef.current = Math.max(
-                nextAudioStartTimeRef.current,
-                outputCtx.currentTime,
-              );
-
-              const audioBuffer = await audio.decodeAudioData(
-                audio.decode(base64Audio),
-                outputCtx,
-                24000,
-                1,
-              );
-              const source = outputCtx.createBufferSource();
-              source.buffer = audioBuffer;
-              source.connect(outputCtx.destination);
-              setIsAiSpeaking(true);
-
-              source.addEventListener('ended', () => {
-                audioSourcesRef.current.delete(source);
-                if (audioSourcesRef.current.size === 0) {
-                  setIsAiSpeaking(false);
-                }
-              });
-
-              source.start(nextAudioStartTimeRef.current);
-              nextAudioStartTimeRef.current += audioBuffer.duration;
-              audioSourcesRef.current.add(source);
+              audioBufferQueueRef.current.push(audioBuffer);
             }
           }
           setIsLoading(false);
@@ -381,26 +318,76 @@ const useExpertTalk = (
         },
         onerror: (e: ErrorEvent): void => {
           console.error('Session error:', e);
-
-          let alertMessage =
-            'Terjadi kesalahan koneksi saat panggilan. Panggilan diakhiri.';
-          const errorMessage = e.message?.toLowerCase() || '';
-
-          if (errorMessage.includes('requested entity was not found')) {
-            alertMessage =
-              'Kunci API yang Anda pilih tidak valid atau telah dicabut. Silakan klik tombol panggil lagi untuk memilih kunci API yang lain.';
-          } else if (errorMessage.includes('network error')) {
-            alertMessage =
-              'Terjadi kesalahan jaringan. Periksa koneksi internet Anda. Jika masalah berlanjut, coba pilih kembali kunci API Anda dengan mengklik tombol panggil lagi.';
-          }
-
-          alert(alertMessage);
           endCall();
         },
       };
 
       sessionPromiseRef.current = gemini.startAiCallSession(expert, callbacks);
-      await sessionPromiseRef?.current;
+      const session = (await sessionPromiseRef?.current) as Session;
+
+      // Speech Recognition Event Handlers
+      recognition.onresult = (event: any): void => {
+        // Jangan proses input jika AI sedang bicara (opsional, untuk mencegah interupsi yang tidak diinginkan)
+        if (useExpertTalkStore.getState().isAiSpeaking) return;
+
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        // Update UI dengan interim result (opsional)
+        if (interimTranscript) {
+          setIsListening(true);
+          // Bisa tambahkan logic update liveTranscript 'user' (sedang mengetik...)
+        }
+
+        // Kirim Final Result ke Gemini
+        if (finalTranscript) {
+          console.log('🎤 User said:', finalTranscript);
+          setIsListening(false);
+
+          // Update Live Transcript (User)
+          const prev = useExpertTalkStore.getState().liveTranscript;
+          setLiveTranscript([
+            ...prev,
+            {
+              speaker: 'user',
+              text: finalTranscript,
+              id: v1(),
+              timestamp: dayjs().format(),
+            },
+          ]);
+
+          // Kirim TEXT ke Gemini Session
+          // session.sendClientContent({ parts: [{ text: finalTranscript }] });
+          session.sendClientContent({
+            turns: { parts: [{ text: finalTranscript }] },
+          });
+          hasReceivedAiTextRef.current = false;
+        }
+      };
+
+      recognition.onerror = (event: any): void => {
+        console.error('Speech recognition error', event.error);
+        if (event.error === 'not-allowed') {
+          alert('Izinkan akses mikrofon untuk menggunakan fitur ini.');
+        }
+      };
+
+      recognition.onend = (): void => {
+        // Restart recognition jika status masih ACTIVE (continuous loop)
+        if (
+          useExpertTalkStore.getState().callStatus === CallStatusEnum.ACTIVE
+        ) {
+          recognition.start();
+        }
+      };
     } catch (error) {
       console.error('Failed to start call:', error);
       await endCall();
