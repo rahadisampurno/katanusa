@@ -6,7 +6,7 @@ export const experts: Expert[] = [
     name: 'Teungku Meurah',
     role: 'Pakar Budaya Aceh',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/teungku-meurah.png',
+      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/10-teungku-meurah.png',
     specialties: [
       'Hukum Syariat & Adat',
       'Sejarah Kesultanan Aceh',
@@ -45,7 +45,7 @@ export const experts: Expert[] = [
     name: 'Bli Komang',
     role: 'Pakar Budaya Bali',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/bli-komang.png',
+      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/11-bli-komang.png',
     specialties: [
       'Falsafah Tri Hita Karana',
       'Sistem Subak',
@@ -84,7 +84,7 @@ export const experts: Expert[] = [
     name: 'Bung Kapitan',
     role: 'Pakar Budaya Maluku',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/bung-kapitan.png',
+      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/12-bung-kapitan.png',
     specialties: [
       'Adat Pela Gandong',
       'Sejarah Rempah',
@@ -123,7 +123,7 @@ export const experts: Expert[] = [
     name: 'Pace Mambri',
     role: 'Pakar Budaya Papua',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/pace-mambri.png',
+      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/13-pace-mambri.png',
     specialties: [
       'Filosofi Noken',
       'Ukiran Asmat & Kamoro',
