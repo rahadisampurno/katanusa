@@ -12,7 +12,7 @@ import {
 import useExpertTalkStore from '../pages/Chat/hooks/useExpertTalkStore';
 import type { ChatMessage } from '../types/chat';
 import { type Expert } from '../types/expert';
-import type { RagContext } from '../types/rag';
+import type { RagResult } from '../types/rag';
 import network from './network';
 import { sanitizeTranscription } from './textSanitizer';
 
@@ -67,21 +67,23 @@ const getAiResponse = async ({
   try {
     const model = 'gemini-2.5-flash';
 
-    const ragContext = await network.post<RagContext[]>('/rag-context', {
+    const ragResult = await network.post<RagResult>('/rag-context', {
       chat: userMessage,
     });
 
-    // Optimasi: Urutkan berdasarkan similarity dan ambil top 5
-    const sortedContext = ragContext.data
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 5);
+    const ragContextText = ragResult.data.fusion ?? '';
 
-    const ragContextText = sortedContext
-      .map(
-        (item) =>
-          `[Relevansi: ${(item.similarity * 100).toFixed(1)}%]\n${item.content}`,
-      )
-      .join('\n\n---\n\n');
+    // Optimasi: Urutkan berdasarkan similarity dan ambil top 5
+    // const sortedContext = ragContext.data
+    //   .sort((a, b) => b.similarity - a.similarity)
+    //   .slice(0, 5);
+
+    // const ragContextText = sortedContext
+    //   .map(
+    //     (item) =>
+    //       `[Relevansi: ${(item.similarity * 100).toFixed(1)}%]\n${item.content}`,
+    //   )
+    //   .join('\n\n---\n\n');
 
     const accentInstruction =
       expert.accentHints && expert.accentHints.length > 0
@@ -268,23 +270,22 @@ const startAiCallSession = async (
             const args = call.args as { query: string };
             console.log(`🔍 Searching RAG for: ${args.query}`);
 
-            const ragContext = await network.post<RagContext[]>(
-              '/rag-context',
-              {
-                chat: args.query,
-              },
-            );
+            const ragResult = await network.post<RagResult>('/rag-context', {
+              chat: args.query,
+            });
 
-            const sortedContext = ragContext.data
-              .sort((a, b) => b.similarity - a.similarity)
-              .slice(0, 3); // Ambil top 3 untuk respons audio yang ringkas
+            const ragContextText = ragResult.data.fusion ?? '';
 
-            const ragContextText = sortedContext
-              .map(
-                (item) =>
-                  `[Relevansi: ${(item.similarity * 100).toFixed(1)}%]\n${item.content}`,
-              )
-              .join('\n\n---\n\n');
+            // const sortedContext = ragContext.data
+            //   .sort((a, b) => b.similarity - a.similarity)
+            //   .slice(0, 3); // Ambil top 3 untuk respons audio yang ringkas
+
+            // const ragContextText = sortedContext
+            //   .map(
+            //     (item) =>
+            //       `[Relevansi: ${(item.similarity * 100).toFixed(1)}%]\n${item.content}`,
+            //   )
+            //   .join('\n\n---\n\n');
 
             toolResponses.push({
               id: call.id,
