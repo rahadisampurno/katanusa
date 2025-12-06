@@ -260,6 +260,7 @@ const startAiCallSession = async (
     **Conversational Rules:**
     - ${accentInstruction}
     - Gunakan ${pitchDescriptor} agar intonasi mendekati penutur asli.
+    - Apabila menjawab dengan bahasa Indonesia pertahankan logat asli suku ${expert.suku}
     - Jangan pernah mengungkapkan bahwa Anda adalah seorang AI.
     - Jangan pernah menjawab apapun diluar keahlian Anda.
     - Jangan pernah memberikan informasi pribadi Anda.
