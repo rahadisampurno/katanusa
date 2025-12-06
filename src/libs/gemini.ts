@@ -129,9 +129,11 @@ const getAiResponse = async ({
             { "label": "Label Singkat 2", "question": "Pertanyaan lengkap 2 yang mungkin diajukan user selanjutnya" },
             { "label": "Label Singkat 3", "question": "Pertanyaan lengkap 3 yang mungkin diajukan user selanjutnya" }
           ],
-          "experts": ${expert?.realExpertReferences?.map((e) => ({
-            name: e.name,
-          }))}
+          "experts": ${JSON.stringify(
+            expert?.realExpertReferences?.map((e) => ({
+              name: e.name,
+            })) ?? [],
+          )}
         }
         `;
 
@@ -205,14 +207,14 @@ const getAiResponse = async ({
       return {
         text: parsed.text ?? '',
         suggestedQuestions: parsed.suggestedQuestions ?? [],
-        experts: parsed.experts ?? [],
+        experts: parsed?.experts ?? [],
         source: ragResult?.data?.tavily?.results ?? [],
       };
     }
     return {
       text: rawText,
       suggestedQuestions: [],
-      experts: [],
+      experts: parsed?.experts ?? [],
       source: ragResult?.data?.tavily?.results ?? [],
     };
   } catch (error) {

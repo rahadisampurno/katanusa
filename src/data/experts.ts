@@ -342,6 +342,7 @@ export const experts: Expert[] = [
       'aje',
     ],
     pitch: 0.0,
+    realExpertReferences: [],
   },
   {
     id: 'a0ecfc9e-092f-48c1-83be-908f0fbb8706',
