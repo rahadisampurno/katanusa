@@ -12,7 +12,7 @@ const About = (): JSX.Element => {
       <section className="relative min-h-[60vh] overflow-hidden">
         <Navbar isWhite />
         <div className="absolute inset-0 bg-cover opacity-15 bg-[url('/assets/bg-experts-header.png')] pointer-events-none"></div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-0 py-24 md:py-32 flex flex-col items-center text-center">
+        <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-4 py-24 text-center md:px-6 md:py-32 xl:px-0">
           <h1 className="text-3xl md:text-5xl font-itim text-white mb-4">Tentang Katanusa</h1>
           <p className="text-white/90 max-w-2xl leading-relaxed">
             Katanusa adalah platform belajar budaya Indonesia melalui AI Pakar Budaya dan konsultasi langsung
@@ -31,7 +31,7 @@ const About = (): JSX.Element => {
       </section>
 
       <section className="relative py-16 bg-[#1E315A]">
-        <div className="max-w-7xl mx-auto px-4 md:px-0 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 md:grid-cols-2 md:px-6 xl:px-0">
           <div className="text-white">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Visi & Misi</h2>
             <ul className="space-y-3 text-white/90">
@@ -51,7 +51,7 @@ const About = (): JSX.Element => {
       </section>
 
       <section className="relative py-16 bg-[#132346]">
-        <div className="max-w-7xl mx-auto px-4 md:px-0 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-12 px-4 md:grid-cols-2 md:px-6 xl:px-0">
           <div className="text-white">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Pendekatan Kami</h2>
             <div className="space-y-4 text-white/90">
@@ -74,7 +74,7 @@ const About = (): JSX.Element => {
       </section>
 
       <section className="relative py-16 bg-[#1E315A]">
-        <div className="max-w-7xl mx-auto px-4 md:px-0">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 xl:px-0">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Nilai-Nilai yang Kami Junjung</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="rounded-2xl p-6 bg-white/5 border border-white/10 text-white">

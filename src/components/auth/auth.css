@@ -11,17 +11,21 @@
   --kn-border: #e7ded5;
   --kn-leaf: #358654;
   --kn-cream: #fff8e9;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
   color: #1c1917;
   background: var(--kn-sky-soft);
   color-scheme: light;
+  width: 100%;
+  max-width: 100%;
 }
 
 .auth-shell {
-  height: 100vh;
-  max-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
   display: grid;
   grid-template-columns: minmax(440px, 1.08fr) minmax(0, 1fr);
@@ -34,8 +38,8 @@
 
 .auth-story {
   position: relative;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -355,8 +359,10 @@
 
 .auth-content {
   min-width: 0;
-  height: 100vh;
-  max-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -528,6 +534,7 @@
 .auth-experience textarea,
 .auth-experience select,
 .auth-field__input {
+  min-width: 0;
   min-height: 3.15rem;
   width: 100%;
   border: 1px solid var(--kn-border);
@@ -695,17 +702,32 @@
 @media (max-width: 899px) {
   .auth-experience {
     height: auto;
-    min-height: 100vh;
+    min-height: 100dvh;
     max-height: none;
     overflow-y: auto;
   }
 
   .auth-shell {
     height: auto;
-    min-height: 100vh;
+    min-height: 100dvh;
     max-height: none;
     overflow-y: auto;
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auth-experience--signup .auth-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auth-content > *,
+  .auth-main > *,
+  .auth-panel > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .auth-experience button {
+    min-height: 2.75rem;
   }
 
   .auth-story {
@@ -737,6 +759,10 @@
     display: none;
   }
 
+  .auth-experience--signup .auth-story__header {
+    display: none;
+  }
+
   .auth-ribbon--red {
     top: 1.5rem;
     left: -6%;
@@ -761,7 +787,7 @@
 
   .auth-content {
     height: auto;
-    min-height: calc(100vh - 4.5rem);
+    min-height: calc(100dvh - 4.5rem);
     max-height: none;
     overflow-y: visible;
     padding: 0 1.1rem 1rem;
@@ -862,7 +888,15 @@
 
   .auth-heading h1,
   .auth-heading h2 {
-    font-size: 2rem;
+    font-size: clamp(1.65rem, 8vw, 2rem);
+  }
+
+  .auth-mobile-progress > div:first-child {
+    align-items: flex-start;
+  }
+
+  .auth-mobile-progress strong {
+    max-width: 55%;
   }
 }
 

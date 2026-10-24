@@ -64,7 +64,7 @@ const DetailExperts = (): JSX.Element => {
 
   if (!expert) {
     return (
-      <main className="flex min-h-screen flex-col bg-[#1E315A]">
+      <main className="flex min-h-[100dvh] flex-col bg-[#1E315A]">
         <Navbar />
         <div className="flex flex-1 flex-col items-center justify-center gap-4 text-white">
           <h1 className="text-3xl font-bold">Pakar tidak ditemukan</h1>
@@ -110,7 +110,7 @@ const DetailExperts = (): JSX.Element => {
   };
 
   return (
-    <main className="min-h-screen bg-[#1E315A] font-sans text-white">
+    <main className="min-h-[100dvh] bg-[#1E315A] font-sans text-white">
       <Navbar isWhite />
 
       <section className="relative overflow-hidden px-4 pb-16 pt-28 sm:px-6 md:pt-20 lg:px-8">

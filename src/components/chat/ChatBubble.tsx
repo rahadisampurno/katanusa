@@ -35,7 +35,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   return (
     <div
       className={cn(
-        'mb-8 flex w-full gap-3',
+        'mb-6 flex w-full gap-2.5 sm:mb-8 sm:gap-3',
         isUser ? 'flex-row-reverse' : 'flex-row',
       )}
     >
@@ -58,7 +58,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
 
       <div
         className={cn(
-          'flex max-w-[88%] flex-col gap-2',
+          'flex min-w-0 max-w-[calc(100%_-_2.875rem)] flex-col gap-2',
           isUser ? 'md:max-w-[70%]' : 'md:max-w-[82%]',
         )}
       >
@@ -128,7 +128,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
             disabled={isLoadingVoice}
             title={isPlayingVoice ? 'Hentikan suara' : 'Dengarkan suara persona'}
             className={cn(
-              'flex w-fit items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60',
+              'flex min-h-11 w-fit items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60',
               isPlayingVoice
                 ? 'bg-[#1E315A] text-white'
                 : 'text-[#1E315A]/65 hover:bg-[#1E315A]/5 hover:text-[#1E315A]',
@@ -158,7 +158,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 key={question.question}
                 type="button"
                 onClick={() => onOptionClick?.(question.question)}
-                className="rounded-full border border-[#1E315A]/15 bg-white px-3 py-1.5 text-left text-xs font-medium text-[#1E315A] transition hover:border-amber-500/50 hover:bg-amber-50"
+                className="min-h-11 rounded-full border border-[#1E315A]/15 bg-white px-3 py-2 text-left text-xs font-medium text-[#1E315A] transition hover:border-amber-500/50 hover:bg-amber-50"
               >
                 {question.label}
               </button>

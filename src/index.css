@@ -5,3 +5,36 @@
     --font-jost: "Jost", sans-serif;
     --font-itim: "Itim", sans-serif;
 }
+
+html {
+    min-width: 320px;
+    overflow-x: clip;
+    text-size-adjust: 100%;
+}
+
+body {
+    min-width: 320px;
+    min-height: 100dvh;
+    margin: 0;
+    overflow-x: clip;
+}
+
+img,
+video,
+svg {
+    max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    touch-action: manipulation;
+}
+
+input:not([type='checkbox']):not([type='radio']),
+select,
+textarea {
+    font-size: 16px;
+}

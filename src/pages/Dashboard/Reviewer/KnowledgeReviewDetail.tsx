@@ -341,11 +341,13 @@ export const KnowledgeReviewDetail: React.FC = () => {
         )}
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-neutral-200 text-xs font-bold text-neutral-600 gap-6">
+        <div className="-mx-1 flex gap-5 overflow-x-auto border-b border-neutral-200 px-1 text-xs font-bold text-neutral-600" role="tablist" aria-label="Bagian tinjauan pengetahuan">
           <button
             type="button"
             onClick={() => setActiveTab('content')}
-            className={`pb-3 transition-colors relative ${
+            role="tab"
+            aria-selected={activeTab === 'content'}
+            className={`relative min-h-11 shrink-0 pb-3 transition-colors ${
               activeTab === 'content' ? 'text-[#d71920]' : 'hover:text-neutral-900'
             }`}
           >
@@ -357,7 +359,9 @@ export const KnowledgeReviewDetail: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('rights')}
-            className={`pb-3 transition-colors relative ${
+            role="tab"
+            aria-selected={activeTab === 'rights'}
+            className={`relative min-h-11 shrink-0 pb-3 transition-colors ${
               activeTab === 'rights' ? 'text-[#d71920]' : 'hover:text-neutral-900'
             }`}
           >
@@ -369,7 +373,9 @@ export const KnowledgeReviewDetail: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`pb-3 transition-colors relative ${
+            role="tab"
+            aria-selected={activeTab === 'history'}
+            className={`relative min-h-11 shrink-0 pb-3 transition-colors ${
               activeTab === 'history' ? 'text-[#d71920]' : 'hover:text-neutral-900'
             }`}
           >
@@ -440,7 +446,7 @@ export const KnowledgeReviewDetail: React.FC = () => {
 
             {activeTab === 'rights' && (
               <div className="p-6 rounded-3xl bg-white border border-[#ebdccc] shadow-sm space-y-5">
-                <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className="grid grid-cols-1 gap-4 text-xs sm:grid-cols-2">
                   <div>
                     <span className="text-neutral-400 block text-[10px]">KONTRIBUTOR PAKAR</span>
                     <span className="font-bold text-[#2e2620]">{version.expert_name}</span>

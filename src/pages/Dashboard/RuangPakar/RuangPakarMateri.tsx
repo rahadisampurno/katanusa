@@ -590,7 +590,7 @@ export const RuangPakarMateri: React.FC = () => {
               }
             }}
           >
-            <div className="relative bg-white rounded-2xl sm:rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200/80 my-auto flex flex-col max-h-[92vh] sm:max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="relative my-auto flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl animate-in zoom-in-95 duration-200 sm:max-h-[90dvh] sm:rounded-3xl">
               {/* Header Modal */}
               <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 border-b border-slate-100 bg-slate-50/80 shrink-0">
                 <div className="flex items-center gap-3">

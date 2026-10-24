@@ -36,8 +36,8 @@ const PaymentSuccess: React.FC = () => {
   const isPaid = status === 'paid' || status === 'completed';
 
   return (
-    <div className="bg-white w-full flex justify-center items-center h-screen">
-      <div className=" max-w-md mx-auto p-8 flex flex-col items-center text-center relative animate-in fade-in zoom-in duration-300">
+    <div className="flex min-h-[100dvh] w-full items-center justify-center bg-white px-4 py-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="relative mx-auto flex max-w-md flex-col items-center p-4 text-center animate-in fade-in zoom-in duration-300 sm:p-8">
         <div className="mb-6 w-full flex justify-center">
           <div className="flex h-32 w-32 items-center justify-center rounded-full bg-green-50 text-green-600">
             <CircleCheck aria-hidden="true" className="h-20 w-20" strokeWidth={1.8} />

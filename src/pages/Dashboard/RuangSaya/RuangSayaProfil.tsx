@@ -431,7 +431,7 @@ export const RuangSayaProfil: React.FC = () => {
             <div className="space-y-3 text-xs text-slate-200">
               <p>Salin URI berikut ke aplikasi autentikator. Jangan bagikan URI ini.</p>
               <code className="block break-all rounded-lg bg-slate-950 p-3">{otpAuthUri}</code>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <input
                   inputMode="numeric"
                   maxLength={6}
@@ -449,21 +449,21 @@ export const RuangSayaProfil: React.FC = () => {
           {recoveryCodes.length > 0 ? (
             <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-xs text-amber-100">
               <p className="font-bold">Recovery codes—ditampilkan satu kali:</p>
-              <div className="mt-2 grid grid-cols-2 gap-2 font-mono">
+              <div className="mt-2 grid grid-cols-1 gap-2 font-mono sm:grid-cols-2">
                 {recoveryCodes.map((code) => <span key={code}>{code}</span>)}
               </div>
             </div>
           ) : null}
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h4 className="text-xs font-bold text-white">Passkey</h4>
             <p className="mt-1 text-[11px] text-slate-300">
               Gunakan sidik jari, Face ID, PIN perangkat, atau security key untuk login tahan phishing.
             </p>
           </div>
-          <Button type="button" variant="outline" onClick={registerPasskey} className="shrink-0 text-xs">
+          <Button type="button" variant="outline" onClick={registerPasskey} className="w-full shrink-0 text-xs sm:w-auto">
             Tambah passkey
           </Button>
         </div>

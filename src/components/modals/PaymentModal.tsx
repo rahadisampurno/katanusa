@@ -151,14 +151,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col relative">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="relative flex max-h-[100dvh] w-full max-w-6xl flex-col overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-h-[90dvh] sm:rounded-3xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900">Metode Bayar</h2>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white p-4 sm:p-6">
+          <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Metode Bayar</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Tutup metode pembayaran"
           >
             <X className="w-6 h-6 text-gray-500" />
           </button>
@@ -166,7 +167,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
         <div className="flex flex-col lg:flex-row">
           {/* Left Column: Form & Methods */}
-          <div className="flex-1 p-6 lg:p-8 space-y-8">
+          <div className="flex-1 space-y-8 p-4 sm:p-6 lg:p-8">
             {/* 1. Data Pemesan */}
             <section>
               <h3 className="text-lg font-bold mb-4 text-gray-900">

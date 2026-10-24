@@ -280,8 +280,8 @@ const ChatWindow: React.FC = () => {
 
   return (
     <div
-      className="flex w-full flex-col overflow-hidden bg-[#F8F2E7]"
-      style={{ height: 'calc(100dvh - 96px)', minHeight: '560px' }}
+      className="flex w-full min-h-0 flex-col overflow-hidden bg-[#F8F2E7]"
+      style={{ height: 'calc(100dvh - 80px)' }}
     >
       <ChatHeader
         expert={expert}
@@ -304,7 +304,7 @@ const ChatWindow: React.FC = () => {
 
       <div
         ref={chatContainerRef}
-        className="relative flex-1 overflow-y-auto bg-[#F8F2E7] px-4 py-8 scroll-smooth sm:px-6 sm:py-10"
+        className="relative min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[#F8F2E7] px-3 py-5 scroll-smooth sm:px-6 sm:py-10"
       >
         <div className="pointer-events-none absolute inset-0 bg-[url('/assets/bg-pattern.webp')] bg-contain bg-repeat opacity-[0.025]" />
 
@@ -328,13 +328,13 @@ const ChatWindow: React.FC = () => {
           ))}
 
           {messages.length === 1 && !isHistoryLoading && !isLoading && (
-            <div className="ml-12 mt-1 flex flex-wrap gap-2">
+            <div className="ml-0 mt-1 flex flex-wrap gap-2 sm:ml-12">
               {conversationStarters.map((question) => (
                 <button
                   key={question}
                   type="button"
                   onClick={() => void sendMessage(question)}
-                  className="rounded-full border border-[#1E315A]/15 bg-transparent px-3.5 py-2 text-left text-xs font-medium leading-5 text-[#1E315A]/75 transition hover:border-amber-600/40 hover:bg-amber-50 hover:text-[#1E315A]"
+                  className="min-h-11 rounded-full border border-[#1E315A]/15 bg-transparent px-3.5 py-2 text-left text-xs font-medium leading-5 text-[#1E315A]/75 transition hover:border-amber-600/40 hover:bg-amber-50 hover:text-[#1E315A]"
                 >
                   {question}
                 </button>

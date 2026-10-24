@@ -16,14 +16,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   startCall,
 }) => {
   return (
-    <header className="border-b border-[#1E315A]/10 bg-[#F8F2E7]/95 px-4 py-3 text-[#1E315A] backdrop-blur sm:px-6">
-      <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+    <header className="border-b border-[#1E315A]/10 bg-[#F8F2E7]/95 px-3 py-2.5 text-[#1E315A] backdrop-blur sm:px-6 sm:py-3">
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 sm:gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             aria-label="Kembali ke profil persona"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#1E315A]/55 transition hover:bg-[#1E315A]/5 hover:text-[#1E315A]"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#1E315A]/55 transition hover:bg-[#1E315A]/5 hover:text-[#1E315A]"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -60,7 +60,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         <button
           type="button"
           aria-label={`Mulai panggilan suara dengan ${expert.name}`}
-          className="flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-[#1E315A]/70 transition hover:bg-[#1E315A]/5 hover:text-[#1E315A] sm:px-4"
+            className="flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-[#1E315A]/70 transition hover:bg-[#1E315A]/5 hover:text-[#1E315A] sm:px-4"
           onClick={async () => {
             await startCall();
           }}

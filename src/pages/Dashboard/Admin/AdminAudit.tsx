@@ -319,7 +319,7 @@ export const AdminAudit: React.FC = () => {
               </div>
 
               <div className="py-4 space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
                   <div className="p-2.5 rounded-xl bg-[#fffbf7] border border-[#ebdccc]">
                     <span className="text-neutral-400 block text-[10px]">LOG ID</span>
                     <span className="font-mono text-neutral-700 truncate block">

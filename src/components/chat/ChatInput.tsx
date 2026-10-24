@@ -36,7 +36,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ expert: propExpert }): JSX.Elemen
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="bg-gradient-to-t from-[#F8F2E7] via-[#F8F2E7] to-[#F8F2E7]/70 px-4 pb-3 pt-2 sm:px-6"
+      className="bg-gradient-to-t from-[#F8F2E7] via-[#F8F2E7] to-[#F8F2E7]/70 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-6"
     >
       <div className="relative mx-auto max-w-4xl">
         <Controller
@@ -53,7 +53,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ expert: propExpert }): JSX.Elemen
                 type="text"
                 autoComplete="off"
                 placeholder="Tanyakan sesuatu tentang budaya..."
-                className="w-full rounded-3xl border border-[#1E315A]/15 bg-white py-4 pl-5 pr-14 text-sm text-slate-800 shadow-[0_8px_30px_rgba(30,49,90,0.08)] outline-none transition placeholder:text-slate-400 focus:border-amber-500/60 focus:ring-4 focus:ring-amber-400/10 sm:text-base"
+                className="w-full rounded-3xl border border-[#1E315A]/15 bg-white py-3.5 pl-5 pr-14 text-base text-slate-800 shadow-[0_8px_30px_rgba(30,49,90,0.08)] outline-none transition placeholder:text-slate-400 focus:border-amber-500/60 focus:ring-4 focus:ring-amber-400/10"
                 onBlur={onBlur}
                 onChange={handleChange}
                 value={value}
@@ -65,7 +65,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ expert: propExpert }): JSX.Elemen
           type="submit"
           aria-label="Kirim pesan"
           disabled={isLoading}
-          className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Send className="h-4 w-4" />
         </button>

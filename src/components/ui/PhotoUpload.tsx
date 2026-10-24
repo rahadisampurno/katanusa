@@ -144,7 +144,7 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({
   return (
     <div className={`space-y-2 ${className}`}>
       {label && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <label className="text-xs font-semibold text-gray-800 flex items-center gap-1.5">
             <Camera className="w-3.5 h-3.5 text-[#b91c1c]" />
             <span>{label}</span>
@@ -153,7 +153,7 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({
             <button
               type="button"
               onClick={handleRemove}
-              className="text-[11px] font-medium text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors cursor-pointer"
+              className="flex min-h-11 items-center gap-1 text-[11px] font-medium text-red-600 transition-colors hover:text-red-700 cursor-pointer"
             >
               <Trash2 className="w-3 h-3" />
               <span>Hapus Foto</span>
@@ -228,7 +228,7 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({
               type="button"
               disabled={disabled || isUploading}
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 text-xs font-semibold cursor-pointer shadow-xs transition-all disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-xs transition-all hover:bg-gray-50 cursor-pointer disabled:opacity-50"
             >
               <ImageIcon className="w-3.5 h-3.5 text-gray-500" />
               <span>{previewUrl ? 'Ganti Berkas Foto' : 'Unggah Potret'}</span>

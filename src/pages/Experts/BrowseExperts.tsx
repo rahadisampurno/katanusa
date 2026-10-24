@@ -146,12 +146,12 @@ const BrowseExpertsPage = (): JSX.Element => {
   };
 
   return (
-    <div className="bg-[#1E315A] min-h-screen">
+    <div className="min-h-[100dvh] bg-[#1E315A]">
       {/* Header Section with different styling than Home */}
       <div className="bg-primary-dark relative h-[400px] flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-blue-600 to-blue-400">
-        <Navbar />
+        <Navbar isWhite />
         <div className="absolute inset-0 bg-center opacity-10 bg-[url('/assets/bg-experts-header.png')] z-0"></div>
-        <div className="relative z-10 text-center mt-10">
+        <div className="relative z-10 mt-10 px-4 text-center">
           <h1 className="text-4xl font-bold text-white mb-2 font-itim">
             Direktori Pakar &amp; Penjaga Tradisi
           </h1>
@@ -176,7 +176,7 @@ const BrowseExpertsPage = (): JSX.Element => {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-3 w-full md:w-auto pb-2 md:pb-0">
+          <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 md:w-auto md:gap-3">
             <FilterDropdown
               label={selectedRole || 'Semua Keahlian'}
               options={uniqueRoles}

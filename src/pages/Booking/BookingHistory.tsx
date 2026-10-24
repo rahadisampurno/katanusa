@@ -223,7 +223,7 @@ const BookingHistory: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#0B1221] flex flex-col">
+    <div className="flex min-h-[100dvh] flex-col bg-[#0B1221]">
       <Navbar isWhite />
 
       <main className="grow container mx-auto px-4 py-8 md:py-12 mt-20">

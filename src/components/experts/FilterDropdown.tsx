@@ -42,17 +42,19 @@ const FilterDropdown = ({
   const isActive = selectedValue !== '';
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative min-w-0" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`px-4 py-3 border rounded-xl font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${
+        aria-expanded={isOpen}
+        className={`flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-xl border px-4 py-3 font-medium transition-colors ${
           isActive
             ? 'border-blue-500 bg-blue-50 text-blue-700'
             : 'border-gray-200 text-gray-600 hover:bg-gray-50'
         }`}
       >
-        {label}
-        <div className="flex items-center gap-1">
+        <span className="truncate">{label}</span>
+        <div className="flex shrink-0 items-center gap-1">
           <Filter className="w-4 h-4" />
           <ChevronDown
             className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -61,8 +63,9 @@ const FilterDropdown = ({
       </button>
 
       {isOpen && (
-        <div className="absolute top-0 left-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
+        <div className="absolute left-0 top-full mt-2 max-h-[min(300px,50dvh)] w-full min-w-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg z-50">
           <button
+            type="button"
             onClick={() => handleSelect('')}
             className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors ${
               selectedValue === '' ? 'bg-blue-50 text-blue-700 font-medium' : ''
@@ -72,6 +75,7 @@ const FilterDropdown = ({
           </button>
           {options.map((option) => (
             <button
+              type="button"
               key={option}
               onClick={() => handleSelect(option)}
               className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors border-t border-gray-100 ${

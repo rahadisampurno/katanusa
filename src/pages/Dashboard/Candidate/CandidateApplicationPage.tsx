@@ -316,7 +316,7 @@ export const CandidateApplicationPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#0f172a] text-white min-h-screen flex flex-col justify-between">
+    <div className="flex min-h-[100dvh] flex-col justify-between bg-[#0f172a] text-white">
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-4 py-10 flex-1 w-full space-y-8">

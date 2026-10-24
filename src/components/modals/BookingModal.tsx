@@ -154,14 +154,15 @@ const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col relative">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="relative flex max-h-[100dvh] w-full max-w-6xl flex-col overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-h-[90dvh] sm:rounded-3xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900">Pilih Waktu</h2>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white p-4 sm:p-6">
+          <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Pilih Waktu</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Tutup pemilihan waktu"
           >
             <X className="w-6 h-6 text-gray-500" />
           </button>
@@ -169,13 +170,13 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
         <div className="flex flex-col lg:flex-row">
           {/* Left Column: Selection */}
-          <div className="flex-1 p-6 lg:p-8 space-y-8">
+          <div className="flex-1 space-y-8 p-4 sm:p-6 lg:p-8">
             {/* 1. Pilih Tanggal */}
             <section>
               <h3 className="text-lg font-bold mb-4 text-gray-900">
                 1. Pilih Tanggal
               </h3>
-              <div className="border border-gray-200 rounded-2xl p-6">
+              <div className="rounded-2xl border border-gray-200 p-3 sm:p-6">
                 <div className="flex items-center justify-between mb-6">
                   <button
                     onClick={handlePrevMonth}
@@ -195,14 +196,14 @@ const BookingModal: React.FC<BookingModalProps> = ({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-2 text-center mb-2">
+                <div className="mb-2 grid grid-cols-7 gap-1 text-center sm:gap-2">
                   {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
                     <div key={day} className="text-sm text-gray-400 py-2">
                       {day}
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
                   {generateCalendarDays().map((date, index) => {
                     if (!date) return <div key={`empty-${index}`} />;
                     const isSelected =
@@ -221,7 +222,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                           setSelectedTime(null);
                         }}
                         className={cn(
-                          'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all mx-auto',
+                          'aspect-square w-full max-w-10 rounded-full flex items-center justify-center text-sm transition-all mx-auto',
                           disabled && 'cursor-not-allowed opacity-30',
                           isSelected
                             ? 'bg-[#1E315A] text-white font-bold shadow-md'

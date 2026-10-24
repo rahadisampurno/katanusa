@@ -672,7 +672,7 @@ const Signup: React.FC = () => {
                 {/* Opsi 1: Belajar & Konsultasi */}
                 <div
                   onClick={() => setJourneyIntent('learner')}
-                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                  className={`flex flex-col justify-between rounded-2xl border-2 p-4 transition-all cursor-pointer sm:p-5 ${
                     journeyIntent === 'learner'
                       ? 'border-[#b91c1c] bg-red-50/30 shadow-xs ring-1 ring-[#b91c1c]/25'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -719,7 +719,7 @@ const Signup: React.FC = () => {
                 {/* Opsi 2: Ajukan Diri Sebagai Pakar */}
                 <div
                   onClick={() => setJourneyIntent('expert_applicant')}
-                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                  className={`flex flex-col justify-between rounded-2xl border-2 p-4 transition-all cursor-pointer sm:p-5 ${
                     journeyIntent === 'expert_applicant'
                       ? 'border-[#b91c1c] bg-red-50/30 shadow-xs ring-1 ring-[#b91c1c]/25'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -879,7 +879,8 @@ const Signup: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                      aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                      className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -903,7 +904,8 @@ const Signup: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                      aria-label={showConfirmPassword ? 'Sembunyikan konfirmasi kata sandi' : 'Tampilkan konfirmasi kata sandi'}
+                      className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -1008,8 +1010,8 @@ const Signup: React.FC = () => {
                   <span
                     className={
                       selectedSuku
-                        ? 'font-medium text-gray-900'
-                        : 'text-gray-400'
+                        ? 'min-w-0 truncate font-medium text-gray-900'
+                        : 'min-w-0 truncate text-gray-400'
                     }
                   >
                     {selectedSuku
@@ -1061,7 +1063,8 @@ const Signup: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setSukuSearchQuery('')}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                            aria-label="Bersihkan pencarian suku"
+                            className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-gray-400 hover:text-gray-600"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -1183,7 +1186,7 @@ const Signup: React.FC = () => {
 
               {/* 3. Domain Keahlian Budaya (Multi-Select + Tambah Kustom) */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="mb-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <label className="block text-xs font-semibold text-gray-700">
                     Domain Keahlian Budaya (Pilih minimal satu) <span className="text-red-500">*</span>
                   </label>
@@ -1191,7 +1194,7 @@ const Signup: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowCustomDomainField(true)}
-                      className="text-[11px] font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer"
+                      className="flex min-h-11 items-center gap-1 text-[11px] font-bold text-red-600 hover:text-red-700 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Tambah Domain Kustom</span>
@@ -1238,7 +1241,7 @@ const Signup: React.FC = () => {
 
                 {/* Input Domain Kustom */}
                 {showCustomDomainField && (
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-xl mb-2">
+                  <div className="mb-2 grid grid-cols-[minmax(0,1fr)_2.75rem] items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                     <input
                       type="text"
                       value={newDomainInput}
@@ -1250,14 +1253,14 @@ const Signup: React.FC = () => {
                         }
                       }}
                       placeholder="Masukkan nama domain keahlian baru lalu tekan Enter..."
-                      className="flex-1 px-3 py-1.5 text-xs bg-white rounded-lg border border-gray-300 outline-none focus:border-red-600"
+                      className="col-span-2 min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs outline-none focus:border-red-600 sm:col-span-1"
                       autoFocus
                     />
                     <Button
                       type="button"
                       variant="primary"
                       onClick={handleAddCustomDomain}
-                      className="text-xs py-1.5 px-3 rounded-lg font-bold"
+                      className="min-h-11 w-full rounded-lg px-3 py-1.5 text-xs font-bold sm:w-auto"
                     >
                       Tambahkan
                     </Button>
@@ -1267,7 +1270,8 @@ const Signup: React.FC = () => {
                         setShowCustomDomainField(false);
                         setNewDomainInput('');
                       }}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                      aria-label="Tutup input domain kustom"
+                      className="flex h-11 w-11 items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1363,7 +1367,7 @@ const Signup: React.FC = () => {
 
               {/* 6. Upload Dokumen & Portofolio (Maksimal 3 Berkas) */}
               <div className="bg-[#faf8f5] border border-[#e7ded5] rounded-2xl p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
                     <UploadCloud className="w-4 h-4 text-[#b91c1c]" />
                     <span className="text-xs font-bold text-gray-900">
@@ -1469,7 +1473,7 @@ const Signup: React.FC = () => {
 
                 {/* Keterangan Dokumen / Rekomendasi Lembaga Adat (Form Description / Textarea) */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="mb-1 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <label className="block text-[11px] font-semibold text-gray-700">
                       Keterangan Dokumen / Rekomendasi Lembaga Adat
                     </label>
@@ -1503,7 +1507,7 @@ const Signup: React.FC = () => {
 
               {/* 7. Apresiasi Sesi Bimbingan Tradisi */}
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="mb-1 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <label className="block text-xs font-semibold text-gray-700">
                     Apresiasi Sesi Bimbingan (Rp / Jam)
                   </label>
@@ -1670,7 +1674,7 @@ const Signup: React.FC = () => {
                     )}
                   </Button>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-gray-100 text-xs">
+                  <div className="flex flex-col items-center gap-2 border-t border-gray-100 pt-2 text-xs sm:flex-row sm:justify-between">
                     <span className="text-gray-500">Tidak menerima kode?</span>
                     <button
                       type="button"

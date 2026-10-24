@@ -576,12 +576,12 @@ const ReviewQueue: React.FC = () => {
 
                 {/* Second-Review Requirement Alert */}
                 {detailData.high_risk_required && (
-                  <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs flex items-center justify-between">
+                  <div className="flex flex-col gap-2 rounded-xl border border-purple-200 bg-purple-50 p-3.5 text-xs text-purple-900 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2 font-medium">
                       <PerisaiTalawangIcon className="w-4 h-4 text-purple-600 shrink-0" />
                       <span>Klaim Berisiko Tinggi: Mewajibkan 2 kurator independen berbeda.</span>
                     </div>
-                    <span className="font-bold text-[11px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300">
+                    <span className="w-fit shrink-0 rounded-full border border-purple-300 bg-purple-100 px-2 py-1 text-[11px] font-bold text-purple-800">
                       Persetujuan saat ini: {detailData.approval_count} / 2
                     </span>
                   </div>
@@ -589,7 +589,7 @@ const ReviewQueue: React.FC = () => {
 
                 {/* Candidate Overview Data */}
                 <div className="space-y-3 text-xs bg-[#f8fbff] p-4 rounded-2xl border border-[#e2e8f0]">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <span className="text-[#64748b] block text-[11px]">Nama Legal (KYC):</span>
                       <strong className="text-[#17294b]">{detailData.application.data.legalName || '-'}</strong>
@@ -747,7 +747,7 @@ const ReviewQueue: React.FC = () => {
                   {/* Outcome Selector */}
                   <div>
                     <label className="block text-xs font-semibold text-[#536176] mb-1.5">Hasil Evaluasi</label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
                       <button
                         type="button"
                         onClick={() => setDecisionOutcome('approved')}

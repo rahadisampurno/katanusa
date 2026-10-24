@@ -525,7 +525,7 @@ export const ApplyExpertPage: React.FC = () => {
   const latestReview = reviews[0];
 
   return (
-    <div className="bg-[#0f172a] text-white min-h-screen flex flex-col justify-between">
+    <div className="flex min-h-[100dvh] flex-col justify-between bg-[#0f172a] text-white">
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full">

@@ -19,8 +19,8 @@ const LandingPage = (): JSX.Element => {
 
   return (
     <main className="bg-[#1E315A]">
-      <section className="relative min-h-screen bg-transparent overflow-hidden">
-        <Navbar />
+      <section className="relative min-h-[100dvh] bg-transparent overflow-hidden">
+        <Navbar mobileOnDark />
         <img
           alt="Panorama budaya Nusantara"
           src="/assets/bg-utama-enhanced.webp"
@@ -29,7 +29,7 @@ const LandingPage = (): JSX.Element => {
           className="w-full h-full object-cover hidden md:block"
         />
         <div className="absolute z-5 top-0 left-0 right-0 bottom-0">
-          <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 md:px-0 pb-12">
+          <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center px-4 pb-12 text-center md:px-6 xl:px-0">
             <h1 className="text-3xl md:text-5xl font-itim max-w-4xl leading-tight mb-6 text-white md:text-black">
               Jelajahi Kekayaan Budaya Indonesia, Semudah Mengirim Pesan.
             </h1>
@@ -63,12 +63,12 @@ const LandingPage = (): JSX.Element => {
           className="w-195 object-contain relative md:absolute md:bottom-0 md:left-0"
         />
         <div className="flex flex-col md:flex-row justify-between min-h-[50vh] relative z-10">
-          <div className="flex-1 flex flex-col items-center justify-start md:justify-between px-4 md:px-0">
+          <div className="flex flex-1 flex-col items-center justify-start px-4 md:justify-between md:px-6 xl:px-0">
             <h2 className="text-white text-3xl md:text-5xl font-itim pt-12 md:pt-20 w-full md:w-[20rem] text-center md:text-left">
               Kenapa Harus Katanusa?
             </h2>
           </div>
-          <div className="flex-1 flex flex-col gap-6 text-white py-12 px-4 md:px-0 items-center md:items-start">
+          <div className="flex flex-1 flex-col items-center gap-6 px-4 py-12 text-white md:items-start md:px-6 xl:px-0">
             <div className="flex flex-col md:flex-row gap-6 items-center w-full md:w-[35rem]">
               <img
                 alt="bye-info-hoax"

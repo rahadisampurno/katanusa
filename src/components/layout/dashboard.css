@@ -8,7 +8,8 @@
   --kn-sky-soft: #f4f8ff;
   --kn-cream: #fff8e9;
   --kn-line: #dce7f5;
-  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
   color: #172033;
   background:
     radial-gradient(circle at 82% 9%, rgba(220, 236, 255, 0.8), transparent 23rem),
@@ -179,7 +180,7 @@
 }
 
 .kn-workspace-option {
-  min-height: 2.25rem;
+  min-height: 2.75rem;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -245,7 +246,7 @@
 
 .kn-menu__link {
   position: relative;
-  min-height: 2.7rem;
+  min-height: 2.75rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -372,7 +373,7 @@
 }
 
 .kn-logout-button {
-  min-height: 2.45rem;
+  min-height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -399,7 +400,8 @@
 }
 
 .kn-dashboard-main {
-  min-height: 100vh;
+  min-width: 0;
+  min-height: 100dvh;
   margin-left: 17.5rem;
   transition: margin-left 220ms ease;
 }
@@ -425,8 +427,8 @@
 
 .kn-mobile-menu {
   display: none;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 0.85rem;
 }
 
@@ -462,7 +464,7 @@
 
 .kn-date-chip,
 .kn-catalog-link {
-  min-height: 2.35rem;
+  min-height: 2.75rem;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -549,6 +551,7 @@
   width: min(100%, 92rem);
   margin: -3.55rem auto 0;
   padding: 0 clamp(1.1rem, 3vw, 3rem) 3.5rem;
+  min-width: 0;
 }
 
 /* Light-first compatibility layer for existing dashboard pages. */
@@ -760,8 +763,8 @@
     position: absolute;
     top: 1.25rem;
     right: 1rem;
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 2.75rem;
+    height: 2.75rem;
     display: grid;
     border-radius: 0.82rem;
   }
@@ -817,7 +820,7 @@
   }
 
   .kn-catalog-link {
-    min-height: 2.2rem;
+    min-height: 2.75rem;
     padding-inline: 0.65rem;
     font-size: 0.68rem;
   }
@@ -833,7 +836,16 @@
   }
 
   .kn-dashboard-content > div {
+    min-width: 0;
     max-width: 100%;
+  }
+
+  .kn-sidebar {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .kn-sidebar__footer {
+    padding-bottom: max(0.8rem, env(safe-area-inset-bottom));
   }
 
   .kn-dashboard-content [class~="p-6"] {

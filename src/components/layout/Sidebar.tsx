@@ -48,6 +48,22 @@ const Sidebar: React.FC<PropsWithChildren<SidebarProps>> = ({
   }, [location.pathname]);
 
   useEffect(() => {
+    if (!isMobileOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const handleEscape = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setIsMobileOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMobileOpen]);
+
+  useEffect(() => {
     document.title = `${title} · KataNusa`;
   }, [title]);
 
@@ -388,6 +404,7 @@ const Sidebar: React.FC<PropsWithChildren<SidebarProps>> = ({
             className="kn-mobile-menu"
             onClick={() => setIsMobileOpen(true)}
             aria-label="Buka navigasi"
+            aria-expanded={isMobileOpen}
           >
             <Menu className="h-5 w-5" />
           </button>
