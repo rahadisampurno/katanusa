@@ -1,5 +1,6 @@
-import { User, Sparkles } from 'lucide-react';
+import { User } from 'lucide-react';
 import type { JSX, PropsWithChildren } from 'react';
+import { SuryaMajapahitIcon } from '../icons/NusantaraIcons';
 import { cn } from '../../libs/utils';
 import type { ExpertBadgeProps } from './ExpertType';
 
@@ -16,7 +17,7 @@ const ExpertBadge = ({
       )}
     >
       {isAi ? (
-        <Sparkles className="w-4 h-4 text-white" />
+        <SuryaMajapahitIcon className="w-4 h-4 text-white" />
       ) : (
         <User className="w-4 h-4 text-white" />
       )}

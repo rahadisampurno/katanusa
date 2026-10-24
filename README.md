@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# KataNusa Web (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Platform digital edukasi dan pelestarian kebudayaan Nusantara interaktif. KataNusa memungkinkan masyarakat berdialog dengan asisten AI berkarakter persona budaya daerah, mengeksplorasi artikel dan kearifan lokal, serta memesan sesi konsultasi daring bersama pakar kebudayaan nyata.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Fitur Utama
 
-## React Compiler
+- **Pakar Budaya Virtual (AI Persona):** Berinteraksi dengan 19 persona AI yang merepresentasikan kebudayaan dari berbagai suku di Indonesia (Sunda, Jawa, Batak, Minang, Bali, Bugis, Papua, Dayak, Lampung, Gorontalo, Nias, Buton, Timor, Kaili, dll.).
+- **Konsultasi Pakar Nyata:** Booking sesi privat (diskusi santai, pendalaman materi, workshop) bersama pakar dan budayawan Indonesia.
+- **Sistem Pembayaran Terpadu:** Terintegrasi dengan Midtrans Snap untuk transaksi daring aman, serta dukungan fallback mode mock untuk pengujian lokal.
+- **Dashboard Manajemen Booking:** Antarmuka bagi pakar dan admin untuk memantau metrik transaksi dan riwayat sesi.
+- **Arsitektur Aman:**
+  - Token akses standar (`access_token` via Bearer Header).
+  - Tidak ada kunci API kecerdasan buatan di bundle browser; seluruh pemanggilan DeepSeek dan RAG dialirkan melalui backend.
+  - Route guard otomatis untuk halaman terproteksi (`/booking-history`, `/dashboard`, `/payment/success`).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Framework & Bundler:** [React 19](https://react.dev/), [Vite 7](https://vitejs.dev/)
+- **Bahasa:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
+- **State Management & Data Fetching:** [@tanstack/react-query](https://tanstack.com/query/latest), [Zustand](https://github.com/pmndrs/zustand)
+- **Routing:** [React Router v7](https://reactrouter.com/)
+- **HTTP Client:** [Axios](https://axios-http.com/)
+- **Icons & Charts:** [Lucide React](https://lucide.dev/), [Recharts](https://recharts.org/)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## ⚙️ Konfigurasi Environment
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Salin file `.env.example` ke `.env`:
+
+```bash
+cp .env.example .env
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Variabel yang tersedia:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Variabel | Deskripsi | Default Lokal |
+| --- | --- | --- |
+| `VITE_API_URL` | URL basis endpoint REST API backend | `http://localhost:8081/api` |
+| `VITE_MIDTRANS_CLIENT_KEY` | Client Key publik Midtrans (opsional; kosongkan untuk mode mock) | *(kosong)* |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+> **Catatan:** Variabel lingkungan Vite dibundel pada waktu build (`build-time`).
+
+---
+
+## 📦 Menjalankan Proyek Secara Lokal
+
+### 1. Instalasi Dependensi
+
+```bash
+pnpm install
+# atau
+npm install
 ```
+
+### 2. Mode Pengembangan
+
+```bash
+pnpm dev
+# atau
+npm run dev
+```
+
+Aplikasi web dapat diakses pada [http://localhost:5173](http://localhost:5173).
+
+### 3. Build Produksi & Preview
+
+```bash
+pnpm build
+pnpm preview
+```
+
+---
+
+## 🐳 Menjalankan dengan Docker
+
+Frontend dapat dijalankan dalam kontainer Nginx:
+
+```bash
+docker compose up -d --build
+```
+
+Aplikasi akan berjalan di port `8085` ([http://localhost:8085](http://localhost:8085)).
+Variabel `VITE_API_URL` disalurkan melalui `build args` sehingga file statis yang di-build memiliki konfigurasi endpoint yang tepat.

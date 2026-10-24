@@ -1,25 +1,31 @@
-import type { JSX } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router';
 import ExpertImage from '../../components/experts/ExpertImage';
 import Footer from '../../components/layout/Footer';
 import Navbar from '../../components/layout/Navbar';
-// @ts-expect-error - SVG import
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import LogoKataNusaWhite from '../../components/svgs/logo-katanusa-white.svg?react';
 import Button from '../../components/ui/Button';
-import { experts } from '../../data/experts';
+import network from '../../libs/network';
+import type { Expert } from '../../types/expert';
 
 const LandingPage = (): JSX.Element => {
   const navigate = useNavigate();
+  const [humanExperts, setHumanExperts] = useState<Expert[]>([]);
+
+  useEffect(() => {
+    network.get<Expert[]>('/experts').then((response) => {
+      setHumanExperts(response.data.filter((expert) => !expert.isAi));
+    }).catch(() => setHumanExperts([]));
+  }, []);
 
   return (
     <main className="bg-[#1E315A]">
       <section className="relative min-h-screen bg-transparent overflow-hidden">
         <Navbar />
         <img
-          alt="bg-utama"
-          // src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-utama.webp"
-          src="/assets/bg-utama.webp"
+          alt="Panorama budaya Nusantara"
+          src="/assets/bg-utama-enhanced.webp"
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-full object-cover hidden md:block"
         />
         <div className="absolute z-5 top-0 left-0 right-0 bottom-0">
@@ -53,22 +59,21 @@ const LandingPage = (): JSX.Element => {
       <section className="relative min-h-[50vh] bg-[#1E315A] overflow-hidden">
         <img
           alt="bg-why-katanusa"
-          // src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-why-katanusa.png"
           src="/assets/bg-why-katanusa.png"
           className="w-195 object-contain relative md:absolute md:bottom-0 md:left-0"
         />
         <div className="flex flex-col md:flex-row justify-between min-h-[50vh] relative z-10">
           <div className="flex-1 flex flex-col items-center justify-start md:justify-between px-4 md:px-0">
-            <h1 className="text-white text-3xl md:text-5xl font-itim pt-12 md:pt-20 w-full md:w-[20rem] text-center md:text-left">
+            <h2 className="text-white text-3xl md:text-5xl font-itim pt-12 md:pt-20 w-full md:w-[20rem] text-center md:text-left">
               Kenapa Harus Katanusa?
-            </h1>
+            </h2>
           </div>
           <div className="flex-1 flex flex-col gap-6 text-white py-12 px-4 md:px-0 items-center md:items-start">
             <div className="flex flex-col md:flex-row gap-6 items-center w-full md:w-[35rem]">
               <img
                 alt="bye-info-hoax"
                 className="block w-32 h-32 md:w-52 md:h-52 object-contain"
-                src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/icon-bye-info-hoax.png"
+                src="/assets/icon-bye-info-hoax.png"
               />
               <div className="flex flex-col gap-2 text-center md:text-left">
                 <h3 className="text-2xl font-bold">Bye-bye Info Hoax</h3>
@@ -84,7 +89,7 @@ const LandingPage = (): JSX.Element => {
               <img
                 alt="lebih-dari-sekadar-chatbot"
                 className="block w-32 h-32 md:w-52 md:h-52 object-contain"
-                src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/icon-lebih-dari-sekadar-chatbot.png"
+                src="/assets/icon-lebih-dari-sekadar-chatbot.png"
               />
               <div className="flex flex-col gap-2 text-center md:text-left">
                 <h3 className="text-2xl font-bold">
@@ -101,7 +106,7 @@ const LandingPage = (): JSX.Element => {
               <img
                 alt="apresiasi"
                 className="block w-32 h-32 md:w-52 md:h-52 object-contain"
-                src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/icon-apresiasi-untuk-penjaga-tradisi.png"
+                src="/assets/icon-apresiasi-untuk-penjaga-tradisi.png"
               />
               <div className="flex flex-col gap-2 text-center md:text-left">
                 <h3 className="text-2xl font-bold">
@@ -123,19 +128,19 @@ const LandingPage = (): JSX.Element => {
         <img
           alt="bg-ai-group"
           className="w-full h-full object-contain inset-0 z-0 -translate-y-4"
-          src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-ai-group.webp"
+          src="/assets/bg-ai-group.webp"
         />
         <div className="z-10 relative md:absolute top-0 left-0 right-0 bottom-0 gap-8 md:gap-12 flex flex-col-reverse md:flex-row justify-center items-center min-h-[50vh] py-12 md:py-0 px-4">
           <img
             alt="ai-group"
-            src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/icon-ai-group.webp"
+            src="/assets/icon-ai-group.webp"
             className="w-full max-w-[20rem] md:w-[35rem] block"
           />
 
-          <div className="flex flex-col items-center md:items-start justify-start gap-6 w-full md:w-[35rem] text-center md:text-left">
-            <h1 className="text-3xl md:text-5xl font-itim md:pt-20">
+          <div className="flex flex-col items-center md:items-start justify-start gap-6 w-full md:w-[35rem] text-center text-white md:text-left md:text-black">
+            <h2 className="text-3xl md:text-5xl font-itim md:pt-20">
               Temui AI Pakar Budaya
-            </h1>
+            </h2>
             <p>
               Belajar budaya lewat chat atau suara. Rasakan pengalaman bertanya
               pada "Persona Digital" Pakar Budaya virtual.
@@ -157,9 +162,9 @@ const LandingPage = (): JSX.Element => {
       <section className="relative flex flex-col gap-12 justify-center items-center min-h-[85vh] bg-[#1E315A] py-12">
         <div className="relative w-full min-h-[85vh] z-10 flex flex-col gap-12 justify-center items-center pb-8 px-4">
           <div className="text-white flex flex-col items-center justify-center gap-6 text-center">
-            <h1 className="text-3xl md:text-5xl font-itim pt-0 md:pt-20">
+            <h2 className="text-3xl md:text-5xl font-itim pt-0 md:pt-20">
               Belajar Langsung dari Pakarnya
-            </h1>
+            </h2>
             <p className="w-full max-w-2xl text-center">
               AI kami hanyalah pembuka jalan. Dapatkan wawasan mendalam melalui
               sesi konsultasi, workshop, atau diskusi privat dengan Pakar
@@ -167,8 +172,7 @@ const LandingPage = (): JSX.Element => {
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full max-w-7xl px-4">
-            {experts
-              .filter((expert) => !(expert.isAi ?? false))
+            {humanExperts
               .map((expert) => (
                 <ExpertImage
                   key={expert.id}
@@ -189,15 +193,15 @@ const LandingPage = (): JSX.Element => {
             Lihat semua pakar
           </Button>
         </div>
-        <div className="w-full h-50 bg-[url('https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-pattern.webp')] absolute bg-repeat bg-contain block bottom-0 left-0 z-0" />
+        <div className="w-full h-50 bg-[url('/assets/bg-pattern.webp')] absolute bg-repeat bg-contain block bottom-0 left-0 z-0" />
       </section>
       {/* belajar-langsung-dari-pakarnya */}
       {/* gabung-sebagai-mitra  */}
       <section className="relative min-h-[50vh] bg-[#132346] flex justify-center items-center pb-12">
-        <Link to="/signup" className="cursor-pointer">
+        <Link to="/auth/signup" className="cursor-pointer">
           <img
             alt="join-as-partner"
-            src="https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/bg-join-as-partner.webp"
+            src="/assets/bg-join-as-partner.webp"
             className="block w-full h-72 object-contain"
           />
         </Link>

@@ -23,7 +23,7 @@ const About = (): JSX.Element => {
             <Button variant="primary" className="px-6" onClick={() => navigate('/experts')}>
               Jelajahi Pakar Budaya
             </Button>
-            <Button variant="outline" className="px-6" onClick={() => navigate('/signup')}>
+            <Button variant="outline" className="px-6" onClick={() => navigate('/auth/signup')}>
               Gabung sebagai Mitra Pakar
             </Button>
           </div>
@@ -56,20 +56,19 @@ const About = (): JSX.Element => {
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Pendekatan Kami</h2>
             <div className="space-y-4 text-white/90">
               <p>
-                • AI Pakar Budaya: Persona digital yang “belajar” dari data terkurasi dan referensi pakar nyata,
-                sehingga jawaban relevan, ringkas, dan akurat.
+                • AI Pakar Budaya: Persona digital yang menggunakan sumber terkurasi,
+                memiliki provenance, dan hanya aktif saat konsen pemilik hak masih berlaku.
               </p>
               <p>
-                • Konsultasi dengan Pakar: Sesi berbayar yang menghubungkan Anda langsung dengan Budayawan terverifikasi
-                untuk wawasan mendalam dan kontekstual.
+                • Bimbingan Bersama Pakar &amp; Maestro: Ruang dialog langsung bersama Budayawan terverifikasi untuk mendalami sastra tutur, bahasa daerah, dan kearifan tradisi Nusantara dengan dukungan apresiasi pelestarian sanggar.
               </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <img alt="pakar-1" src="/assets/pakar-nyata/sujiwo-tejo.png" className="rounded-xl shadow-lg" />
-            <img alt="pakar-2" src="/assets/pakar-nyata/prof-juhaeri-muchtar.png" className="rounded-xl shadow-lg" />
-            <img alt="pakar-3" src="/assets/pakar-nyata/pak-hawe.png" className="rounded-xl shadow-lg" />
-            <img alt="pakar-4" src="/assets/pakar-nyata/didin-s-damanhuri.png" className="rounded-xl shadow-lg" />
+            <img alt="Persona AI budaya Aceh" src="/assets/pakar-virtual/10-teungku-meurah.webp" className="rounded-xl shadow-lg" loading="lazy" />
+            <img alt="Persona AI budaya Bali" src="/assets/pakar-virtual/11-bli-komang.webp" className="rounded-xl shadow-lg" loading="lazy" />
+            <img alt="Persona AI budaya Maluku" src="/assets/pakar-virtual/12-bung-kapitan.webp" className="rounded-xl shadow-lg" loading="lazy" />
+            <img alt="Persona AI budaya Papua" src="/assets/pakar-virtual/13-pace-mambri.webp" className="rounded-xl shadow-lg" loading="lazy" />
           </div>
         </div>
       </section>
@@ -95,7 +94,7 @@ const About = (): JSX.Element => {
       </section>
 
       <section className="relative min-h-[40vh] bg-[#132346] flex items-center">
-        <Link to="/signup" className="w-full">
+        <Link to="/auth/signup" className="w-full">
           <img
             alt="join-as-partner"
             src="/assets/bg-join-as-partner.webp"

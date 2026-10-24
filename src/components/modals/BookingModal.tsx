@@ -14,7 +14,16 @@ interface Expert {
   name: string;
   role: string;
   image: string;
-  // Add other fields if necessary
+  services?: Array<{
+    id: string;
+    serviceKey: string;
+    label: string;
+    duration: string;
+    durationMinutes: number;
+    price: number;
+  }>;
+  availability?: Array<{ weekday: number; startsAt: string; endsAt: string }>;
+  bookingPolicy?: { bookingNoticeHours: number; bookingHorizonDays: number };
 }
 
 interface BookingModalProps {
@@ -32,8 +41,6 @@ interface BookingModalProps {
     };
   }) => void;
 }
-
-const TIME_SLOTS = ['09:00', '10:00', '11:00', '15:00', '16:00', '17:00'];
 
 const SESSION_TYPES = [
   {
@@ -67,13 +74,39 @@ const BookingModal: React.FC<BookingModalProps> = ({
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedSessionTypeId, setSelectedSessionTypeId] = useState<
     string | null
-  >(SESSION_TYPES[0].id);
+  >(expert.services?.[0]?.serviceKey ?? SESSION_TYPES[0].id);
 
   if (!isOpen) return null;
 
-  const selectedSession = SESSION_TYPES.find(
-    (s) => s.id === selectedSessionTypeId,
-  );
+  const sessionTypes = expert.services?.length
+    ? expert.services.map((service) => ({ ...service, id: service.serviceKey }))
+    : SESSION_TYPES;
+  const selectedSession = sessionTypes.find((s) => s.id === selectedSessionTypeId);
+
+  const availableSlots = (() => {
+    if (!selectedDate || !selectedSession || !expert.availability?.length) return [];
+    const ranges = expert.availability.filter((entry) => entry.weekday === selectedDate.day());
+    const slots: string[] = [];
+    const durationMinutes = 'durationMinutes' in selectedSession
+      ? Number(selectedSession.durationMinutes)
+      : Number.parseInt(selectedSession.duration, 10) || 30;
+    const noticeHours = expert.bookingPolicy?.bookingNoticeHours ?? 24;
+    const earliest = dayjs().add(noticeHours, 'hour');
+    for (const range of ranges) {
+      const [startHour, startMinute] = range.startsAt.slice(0, 5).split(':').map(Number);
+      const [endHour, endMinute] = range.endsAt.slice(0, 5).split(':').map(Number);
+      let cursor = startHour * 60 + startMinute;
+      const end = endHour * 60 + endMinute;
+      while (cursor + durationMinutes <= end) {
+        const hour = String(Math.floor(cursor / 60)).padStart(2, '0');
+        const minute = String(cursor % 60).padStart(2, '0');
+        const candidate = selectedDate.hour(Math.floor(cursor / 60)).minute(cursor % 60).second(0);
+        if (!candidate.isBefore(earliest)) slots.push(`${hour}:${minute}`);
+        cursor += 30;
+      }
+    }
+    return slots;
+  })();
 
   // Calendar Logic
   const startOfMonth = currentDate.startOf('month');
@@ -113,7 +146,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
   const handleProceed = (): void => {
     if (selectedDate && selectedTime && selectedSession) {
       onProceed({
-        date: selectedDate.format('D MMMM YYYY'),
+        date: selectedDate.format('YYYY-MM-DD'),
         time: selectedTime,
         sessionType: selectedSession,
       });
@@ -174,12 +207,22 @@ const BookingModal: React.FC<BookingModalProps> = ({
                     if (!date) return <div key={`empty-${index}`} />;
                     const isSelected =
                       selectedDate && date.isSame(selectedDate, 'day');
+                    const policy = expert.bookingPolicy ?? { bookingNoticeHours: 24, bookingHorizonDays: 90 };
+                    const earliest = dayjs().add(policy.bookingNoticeHours, 'hour');
+                    const latest = dayjs().add(policy.bookingHorizonDays, 'day');
+                    const hasAvailability = expert.availability?.some((entry) => entry.weekday === date.day()) ?? true;
+                    const disabled = date.endOf('day').isBefore(earliest) || date.startOf('day').isAfter(latest) || !hasAvailability;
                     return (
                       <button
                         key={date.toString()}
-                        onClick={() => setSelectedDate(date)}
+                        disabled={disabled}
+                        onClick={() => {
+                          setSelectedDate(date);
+                          setSelectedTime(null);
+                        }}
                         className={cn(
                           'h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all mx-auto',
+                          disabled && 'cursor-not-allowed opacity-30',
                           isSelected
                             ? 'bg-[#1E315A] text-white font-bold shadow-md'
                             : 'hover:bg-gray-100 text-gray-700',
@@ -199,7 +242,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 2. Pilih Jam Tersedia
               </h3>
               <div className="flex flex-wrap gap-3">
-                {TIME_SLOTS.map((time) => (
+                {availableSlots.map((time) => (
                   <button
                     key={time}
                     onClick={() => setSelectedTime(time)}
@@ -213,6 +256,9 @@ const BookingModal: React.FC<BookingModalProps> = ({
                     {time}
                   </button>
                 ))}
+                {selectedDate && availableSlots.length === 0 ? (
+                  <p className="text-sm text-gray-500">Tidak ada slot yang cocok untuk layanan ini pada tanggal tersebut.</p>
+                ) : null}
               </div>
             </section>
 
@@ -222,7 +268,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 3. Pilih Tipe Sesi
               </h3>
               <div className="space-y-4">
-                {SESSION_TYPES.map((session) => (
+                {sessionTypes.map((session) => (
                   <label
                     key={session.id}
                     className="flex items-start gap-3 cursor-pointer group"
@@ -233,7 +279,10 @@ const BookingModal: React.FC<BookingModalProps> = ({
                         name="sessionType"
                         value={session.id}
                         checked={selectedSessionTypeId === session.id}
-                        onChange={() => setSelectedSessionTypeId(session.id)}
+                        onChange={() => {
+                          setSelectedSessionTypeId(session.id);
+                          setSelectedTime(null);
+                        }}
                         className="peer sr-only"
                       />
                       <div className="w-5 h-5 border-2 border-gray-300 rounded-full peer-checked:border-[#1E315A] peer-checked:border-[6px] transition-all" />

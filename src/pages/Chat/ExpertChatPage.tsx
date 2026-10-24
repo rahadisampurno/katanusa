@@ -3,13 +3,14 @@ import Navbar from '../../components/layout/Navbar';
 
 const ExpertChatPage = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#243b6a] to-[#1E315A] overflow-hidden relative flex flex-col">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#1E315A]">
       <Navbar isWhite />
 
-      <div className="absolute inset-0 bg-cover opacity-20 bg-[url('/assets/bg-experts-header.png')] pointer-events-none"></div>
-      <div className="absolute left-0 right-0 bottom-0 h-[274px] bg-[url('/assets/footer-chat.svg')] bg-repeat opacity-100 pointer-events-none"></div>
+      <div className="pointer-events-none absolute inset-0 bg-[url('/assets/bg-pattern.webp')] bg-contain bg-repeat opacity-[0.035]" />
+      <div className="pointer-events-none absolute -left-40 top-40 h-96 w-96 rounded-full bg-red-500/[0.06] blur-3xl" />
+      <div className="pointer-events-none absolute -right-40 bottom-10 h-96 w-96 rounded-full bg-amber-300/[0.05] blur-3xl" />
 
-      <main className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
+      <main className="relative z-10 flex flex-1 items-start justify-center pt-24">
         <ChatWindow />
       </main>
     </div>

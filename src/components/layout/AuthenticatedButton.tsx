@@ -1,9 +1,10 @@
-import { Sparkles, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import type React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useRevalidator } from 'react-router';
 import auth from '../../libs/auth';
 import useAiTokenStore from '../../stores/useAiTokenStore';
+import { SuryaMajapahitIcon } from '../icons/NusantaraIcons';
 
 const AuthenticatedButton: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -29,9 +30,9 @@ const AuthenticatedButton: React.FC = () => {
         <User className="w-4 h-4" />
         <span>{auth.getUserData()?.user_metadata?.name}</span>
       </div>
-      <div className="flex items-center gap-2 text-amber-500 font-bold">
+      <div className="flex items-center gap-2 text-amber-500 font-bold" title="Kearifan Token">
         <span className="inline-block">{aiToken}</span>
-        <Sparkles className="w-4 h-4" />
+        <SuryaMajapahitIcon className="w-4 h-4" />
       </div>
       {showDropdown && (
         <div className="absolute right-0 translate-y-3 rounded-2xl top-full w-full bg-white shadow-lg z-50">
@@ -42,7 +43,7 @@ const AuthenticatedButton: React.FC = () => {
             >
               Booking Saya
             </Link>
-            {auth.getUserData()?.user_metadata?.role === 'pakar' ? (
+            {['pakar', 'admin'].includes(auth.getUserData()?.role ?? '') ? (
               <Link
                 to="/dashboard"
                 className="hover:bg-gray-50 text-gray-700 transition p-4"

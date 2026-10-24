@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search, X } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Footer from '../../components/layout/Footer';
 import Navbar from '../../components/layout/Navbar';
+import { TablePagination } from '../../components/ui/TablePagination';
 import network from '../../libs/network';
 import {
   BookingStatus,
@@ -97,6 +98,9 @@ const BookingCard: React.FC<{ booking: BookingType }> = ({ booking }) => {
         <img
           src={booking.expertImage}
           alt={booking.expertName}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }}
           className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-2 border-white/10"
         />
         <div className="text-center md:text-left">
@@ -138,7 +142,7 @@ const BookingCard: React.FC<{ booking: BookingType }> = ({ booking }) => {
             type="button"
             className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-full transition-colors w-full md:w-auto"
           >
-            Bayar Sekarang
+            Sampaikan Apresiasi
           </button>
         )}
         {booking.status === BookingStatus.COMPLETED && (
@@ -161,14 +165,15 @@ const BookingCard: React.FC<{ booking: BookingType }> = ({ booking }) => {
 };
 
 const BookingHistory: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'active' | 'history' | 'pending'>(
-    'active',
-  );
+  const [activeTab, setActiveTab] = useState<'active' | 'history' | 'pending'>('active');
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   const tabs = [
-    { id: 'active', label: 'Aktif/Yang Akan Datang' },
-    { id: 'history', label: 'Riwayat/Selesai' },
-    { id: 'pending', label: 'Pembayaran Tertunda' },
+    { id: 'active', label: 'Aktif / Yang Akan Datang' },
+    { id: 'history', label: 'Riwayat / Selesai' },
+    { id: 'pending', label: 'Menunggu Konfirmasi' },
   ] as const;
 
   // Fetch Data using React Query
@@ -182,24 +187,40 @@ const BookingHistory: React.FC = () => {
       const response = await network.get('/booking', {
         params: {
           page: 1,
-          limit: 50, // Fetch enough items
+          limit: 100,
         },
       });
       return response.data;
     },
   });
 
-  // Filter Data based on Active Tab
+  // Filter Data based on Active Tab & Search
   const bookings = bookingResponse?.data.map(mapApiBookingToUiBooking) || [];
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, search, pageSize]);
+
   const filteredBookings = bookings.filter((booking) => {
-    if (activeTab === 'active') return booking.status === BookingStatus.ACTIVE;
-    if (activeTab === 'history')
-      return booking.status === BookingStatus.COMPLETED;
-    if (activeTab === 'pending')
-      return booking.status === BookingStatus.PENDING_PAYMENT;
-    return false;
+    if (activeTab === 'active' && booking.status !== BookingStatus.ACTIVE) return false;
+    if (activeTab === 'history' && booking.status !== BookingStatus.COMPLETED) return false;
+    if (activeTab === 'pending' && booking.status !== BookingStatus.PENDING_PAYMENT) return false;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const matchExpert = booking.expertName?.toLowerCase().includes(q);
+      const matchTopic = booking.topic?.toLowerCase().includes(q);
+      const matchId = booking.id?.toLowerCase().includes(q);
+      if (!matchExpert && !matchTopic && !matchId) return false;
+    }
+    return true;
   });
+
+  const totalPages = Math.ceil(filteredBookings.length / pageSize) || 1;
+  const paginatedBookings = filteredBookings.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   return (
     <div className="min-h-screen bg-[#0B1221] flex flex-col">
@@ -207,27 +228,49 @@ const BookingHistory: React.FC = () => {
 
       <main className="grow container mx-auto px-4 py-8 md:py-12 mt-20">
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-8 font-sans">
-          Booking Sesi Saya
+          Agenda Bimbingan Budaya Saya
         </h1>
 
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-6 md:gap-8 border-b border-white/10 mb-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`pb-4 text-base md:text-lg font-medium transition-colors relative ${
-                activeTab === tab.id
-                  ? 'text-white'
-                  : 'text-gray-400 hover:text-gray-200'
-              }`}
-            >
-              {tab.label}
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-[#D92D20] rounded-t-full" />
-              )}
-            </button>
-          ))}
+        {/* Tabs & Search */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 mb-8 pb-3">
+          <div className="flex flex-wrap gap-6 md:gap-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`pb-2 text-base md:text-lg font-medium transition-colors relative cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'text-white font-bold'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <div className="absolute -bottom-3 left-0 w-full h-1 bg-[#D92D20] rounded-t-full" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative w-full md:w-72">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Cari pakar, topik, atau ID sesi..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 bg-[#162447] border border-white/10 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-hidden focus:border-amber-400"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -240,21 +283,41 @@ const BookingHistory: React.FC = () => {
 
           {isError && (
             <div className="text-center py-12 text-red-400">
-              Gagal memuat data booking. Silakan coba lagi nanti.
+              Gagal memuat agenda bimbingan. Silakan coba lagi nanti.
             </div>
           )}
 
           {!isLoading && !isError && (
             <>
               {filteredBookings.length > 0 ? (
-                filteredBookings.map((booking) => (
-                  <BookingCard key={booking.id} booking={booking} />
-                ))
+                <>
+                  <div className="flex flex-col gap-4">
+                    {paginatedBookings.map((booking) => (
+                      <BookingCard key={booking.id} booking={booking} />
+                    ))}
+                  </div>
+
+                  <div className="bg-[#162447] rounded-2xl p-4 border border-white/10 shadow-md">
+                    <TablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={filteredBookings.length}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={setPageSize}
+                      pageSizeOptions={[5, 10, 20]}
+                    />
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-12 text-gray-400">
-                  {activeTab === 'active' && 'Belum ada sesi aktif.'}
-                  {activeTab === 'history' && 'Belum ada riwayat sesi.'}
-                  {activeTab === 'pending' && 'Tidak ada pembayaran tertunda.'}
+                  {search
+                    ? 'Tidak ada agenda bimbingan yang cocok dengan kata kunci pencarian.'
+                    : activeTab === 'active'
+                    ? 'Belum ada sesi aktif.'
+                    : activeTab === 'history'
+                    ? 'Belum ada riwayat sesi.'
+                    : 'Tidak ada sesi menunggu konfirmasi.'}
                 </div>
               )}
             </>

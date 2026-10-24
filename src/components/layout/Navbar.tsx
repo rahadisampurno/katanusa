@@ -29,7 +29,11 @@ const Navbar: React.FC<NavbarProps> = ({ isWhite = false }) => {
         )}
       >
         {/* Logo */}
-        <Link to="/" className="text-2xl font-bold font-serif tracking-wide">
+        <Link
+          to="/"
+          aria-label="KataNusa — kembali ke beranda"
+          className="text-2xl font-bold font-serif tracking-wide"
+        >
           {isWhite ? <LogoKataNusaWhite /> : <LogoKataNusa />}
         </Link>
 
@@ -39,9 +43,9 @@ const Navbar: React.FC<NavbarProps> = ({ isWhite = false }) => {
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle menu"
         >
-          <div className="w-6 h-0.5 bg-black mb-1"></div>
-          <div className="w-6 h-0.5 bg-black mb-1"></div>
-          <div className="w-6 h-0.5 bg-black"></div>
+          <div className={cn('w-6 h-0.5 mb-1', isWhite ? 'bg-white' : 'bg-black')}></div>
+          <div className={cn('w-6 h-0.5 mb-1', isWhite ? 'bg-white' : 'bg-black')}></div>
+          <div className={cn('w-6 h-0.5', isWhite ? 'bg-white' : 'bg-black')}></div>
         </button>
 
         {/* Navigation Links */}
@@ -70,6 +74,7 @@ const Navbar: React.FC<NavbarProps> = ({ isWhite = false }) => {
               className={cn('px-6 py-1.5 border-black/50 text-black w-full', {
                 'text-white border-white': isWhite,
               })}
+              onClick={() => navigate('/auth/signup')}
             >
               Daftar
             </Button>

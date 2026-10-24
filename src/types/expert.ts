@@ -25,6 +25,7 @@ export interface Expert {
   suku?: string;
   voiceName?: string;
   languageCode?: string;
+  fallbackLanguageCode?: string;
   accentHints?: string[];
   speakingRate?: number;
   pitch?: number;

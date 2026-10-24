@@ -3,9 +3,14 @@ FROM node:22-slim as builder
 
 WORKDIR /app
 
+ARG VITE_API_URL=http://localhost:8081/api
+ARG VITE_MIDTRANS_CLIENT_KEY=
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_MIDTRANS_CLIENT_KEY=$VITE_MIDTRANS_CLIENT_KEY
+
 # Copy package files and install dependencies
 COPY package.json package-lock.json ./
-RUN npm install --frozen-lockfile
+RUN npm ci
 
 # Copy the rest of the application source code
 COPY . .

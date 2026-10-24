@@ -1,9 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
+import { CircleCheck } from 'lucide-react';
 import type React from 'react';
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-// @ts-expect-error - SVG import
-import IconPaymentSuccess from '../../components/svgs/icon-payment-success.svg?react';
 import Button from '../../components/ui/Button';
 import network from '../../libs/network';
 
@@ -11,42 +10,65 @@ const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const { mutateAsync: mutatePaymentSuccess, isPending } = useMutation({
+  const {
+    mutateAsync: confirmPayment,
+    isPending,
+    isError,
+    data: paymentResponse,
+  } = useMutation({
     mutationKey: ['payment-success', searchParams],
-    mutationFn: async () =>
-      await network.put(`/booking/${searchParams.get('order_id')}`),
-    onSuccess: () => {
-      // navigate('/booking-history');
-    },
-    onError: () => {
-      // navigate('/payment-failed');
+    mutationFn: async () => {
+      const orderId = searchParams.get('order_id');
+      if (!orderId) throw new Error('Order ID tidak tersedia.');
+      if (searchParams.get('provider') === 'mock') {
+        return await network.post(`/payments/mock/${orderId}/complete`);
+      }
+      return await network.get(`/booking/${orderId}`);
     },
   });
 
   useEffect(() => {
-    mutatePaymentSuccess();
-  }, [searchParams]);
+    void confirmPayment();
+  }, [confirmPayment]);
+
+  const status =
+    paymentResponse?.data?.status ?? paymentResponse?.data?.data?.status;
+  const isPaid = status === 'paid' || status === 'completed';
 
   return (
     <div className="bg-white w-full flex justify-center items-center h-screen">
       <div className=" max-w-md mx-auto p-8 flex flex-col items-center text-center relative animate-in fade-in zoom-in duration-300">
         <div className="mb-6 w-full flex justify-center">
-          <IconPaymentSuccess className="w-64 h-auto" />
+          <div className="flex h-32 w-32 items-center justify-center rounded-full bg-green-50 text-green-600">
+            <CircleCheck aria-hidden="true" className="h-20 w-20" strokeWidth={1.8} />
+            <span className="sr-only">Pembayaran berhasil</span>
+          </div>
         </div>
 
         {isPending ? (
           <>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Pembayaran Sedang Diproses
+              Penyampaian Apresiasi Sedang Diproses
             </h2>
+          </>
+        ) : isError ? (
+          <>
+            <h2 className="text-2xl font-bold text-red-700 mb-2">
+              Konfirmasi Apresiasi Belum Selesai
+            </h2>
+            <p className="text-gray-600 mb-8">
+              Silakan periksa agenda bimbingan Anda atau coba beberapa saat lagi.
+            </p>
           </>
         ) : (
           <>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Pembayaran Berhasil!
+              {isPaid ? 'Apresiasi Berhasil Disampaikan!' : 'Penyampaian Apresiasi Sedang Diproses'}
             </h2>
             <p className="text-gray-600 mb-8">
-              Terima kasih telah mendukung ekosistem budaya Indonesia.
+              {isPaid
+                ? 'Matur nuwun / Terima kasih atas ketulusan Anda mendukung sanggar, bahasa daerah, dan pelestarian pusaka tradisi Nusantara.'
+                : 'Status dukungan akan diperbarui setelah dikonfirmasi oleh sistem verifikasi.'}
             </p>
           </>
         )}
@@ -61,12 +83,10 @@ const PaymentSuccess: React.FC = () => {
               <Button
                 className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-red-600/20 transition-all"
                 onClick={() => {
-                  // Navigate to booking history or dashboard if available
-                  // For now, maybe just close or go to experts list
                   navigate('/booking-history');
                 }}
               >
-                Lihat Booking Sesi Saya
+                Lihat Agenda Bimbingan Budaya
               </Button>
 
               <button

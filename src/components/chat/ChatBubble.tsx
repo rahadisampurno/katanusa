@@ -1,9 +1,9 @@
-import { User } from 'lucide-react';
+import { Loader2, User, Volume2, VolumeX } from 'lucide-react';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '../../libs/utils';
-import type { TavilyResultType } from '../../types/rag';
+import type { KnowledgeSource } from '../../types/rag';
 
 interface ChatBubbleProps {
   message: string;
@@ -11,15 +11,13 @@ interface ChatBubbleProps {
   avatarUrl?: string;
   additional?: {
     suggestedQuestions?: { label: string; question: string }[];
-    source?: TavilyResultType[];
-    experts?: {
-      name: string;
-      role: string;
-      bio: string;
-      specialties: string[];
-    }[];
+    source?: KnowledgeSource[];
+    experts?: { name: string; role?: string }[];
   };
   onOptionClick?: (question: string) => void;
+  onSpeak?: (message: string) => void;
+  isPlayingVoice?: boolean;
+  isLoadingVoice?: boolean;
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({
@@ -28,69 +26,139 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   avatarUrl,
   additional,
   onOptionClick,
+  onSpeak,
+  isPlayingVoice,
+  isLoadingVoice,
 }) => {
+  const apiBaseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+
   return (
     <div
       className={cn(
-        'flex w-full gap-4 mb-6',
+        'mb-8 flex w-full gap-3',
         isUser ? 'flex-row-reverse' : 'flex-row',
       )}
     >
-      <div className="shrink-0 w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+      <div
+        className={cn(
+          'flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border',
+          isUser
+            ? 'border-[#1E315A]/15 bg-[#1E315A]/10'
+            : 'border-amber-300/50 bg-white',
+        )}
+      >
         {isUser ? (
-          <User className="w-5 h-5 text-gray-600" />
+          <User className="h-4 w-4 text-[#1E315A]" />
         ) : avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt="avatar"
-            className="w-full h-full object-cover"
-          />
+          <img src={avatarUrl} alt="Avatar persona" className="h-full w-full object-cover" />
         ) : (
-          <User className="w-5 h-5 text-gray-600" />
+          <User className="h-4 w-4 text-[#1E315A]" />
         )}
       </div>
-      {/* Bubble */}
-      <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[70%]">
+
+      <div
+        className={cn(
+          'flex max-w-[88%] flex-col gap-2',
+          isUser ? 'md:max-w-[70%]' : 'md:max-w-[82%]',
+        )}
+      >
         <div
           className={cn(
-            'p-4 rounded-2xl text-sm leading-relaxed shadow-sm break-words relative',
+            'relative break-words text-sm leading-7 sm:text-[15px]',
             isUser
-              ? 'bg-blue-100 text-gray-800 rounded-tr-none border border-blue-200'
-              : 'bg-white text-gray-800 rounded-tl-none border border-gray-200',
+              ? 'rounded-2xl bg-[#E7E0D5] px-4 py-3 text-[#1E315A]'
+              : 'px-1 py-1 text-slate-800',
           )}
         >
-          {message.split('\n').map((line, i) => (
-            <div key={i} className={i > 0 ? 'w-full' : ''}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{line}</ReactMarkdown>
-            </div>
-          ))}
+          <div className="chat-markdown space-y-2">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message}</ReactMarkdown>
+          </div>
+
           {additional?.source && additional.source.length > 0 && (
-            <div className="flex flex-col items-start w-full gap-1 mt-3 overflow-hidden">
-              {/* <div className="text-xs bg-blue-500 text-white h-5 w-5 rounded-full flex items-center justify-center gap-1">
-                <Check className="w-4 h-4 inline-block" />
-              </div> */}
-              <div className="text-xs text-gray-500 rounded-2xl">
-                Artikel: {additional.source?.[0]?.url}
+            <div
+              className={cn(
+                'mt-4 border-t pt-3 text-xs leading-5',
+                'border-slate-300/70 text-slate-500',
+              )}
+            >
+              <div>
+                <span className="font-semibold">Sumber: </span>
+                {additional.source.map((source, index) => {
+                  const sourceUrl = source.url
+                    ?? (source.citationId
+                      ? `${apiBaseUrl}/knowledge/citations/${encodeURIComponent(source.citationId)}`
+                      : undefined);
+
+                  return (
+                    <React.Fragment key={source.citationId ?? `${source.kind}-${source.title}`}>
+                      {index > 0 ? '; ' : ''}
+                      {sourceUrl ? (
+                        <a
+                          href={sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline hover:text-amber-700"
+                        >
+                          {source.title}
+                        </a>
+                      ) : (
+                        source.title
+                      )}
+                      {source.locator ? ` (${source.locator})` : ''}
+                    </React.Fragment>
+                  );
+                })}
               </div>
-              <div className="text-xs text-gray-500 rounded-2xl">
-                {/* {additional.source?.[0]?.url} */}
-                Data ini terverifikasi oleh pakar{' '}
-                <span className="font-bold">
-                  {additional?.experts?.map((e) => e.name).join(', ')}
-                </span>
-              </div>
+              {additional.experts && additional.experts.length > 0 && (
+                <div>
+                  Referensi pakar:{' '}
+                  <span className="font-semibold">
+                    {additional.experts.map((expert) => expert.name).join(', ')}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Suggested Questions */}
+        {!isUser && onSpeak && message.trim() && (
+          <button
+            type="button"
+            onClick={() => onSpeak(message)}
+            disabled={isLoadingVoice}
+            title={isPlayingVoice ? 'Hentikan suara' : 'Dengarkan suara persona'}
+            className={cn(
+              'flex w-fit items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60',
+              isPlayingVoice
+                ? 'bg-[#1E315A] text-white'
+                : 'text-[#1E315A]/65 hover:bg-[#1E315A]/5 hover:text-[#1E315A]',
+            )}
+          >
+            {isLoadingVoice ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : isPlayingVoice ? (
+              <VolumeX className="h-3.5 w-3.5" />
+            ) : (
+              <Volume2 className="h-3.5 w-3.5" />
+            )}
+            <span>
+              {isLoadingVoice
+                ? 'Memuat suara...'
+                : isPlayingVoice
+                  ? 'Hentikan suara'
+                  : 'Dengarkan suara'}
+            </span>
+          </button>
+        )}
+
         {!isUser && additional?.suggestedQuestions && (
-          <div className="flex flex-wrap gap-2 mt-1">
-            {additional.suggestedQuestions.map((question, idx) => (
+          <div className="mt-1 flex flex-wrap gap-2">
+            {additional.suggestedQuestions.map((question) => (
               <button
-                key={idx}
+                key={question.question}
+                type="button"
                 onClick={() => onOptionClick?.(question.question)}
-                className="px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-50 transition-colors text-left"
+                className="rounded-full border border-[#1E315A]/15 bg-white px-3 py-1.5 text-left text-xs font-medium text-[#1E315A] transition hover:border-amber-500/50 hover:bg-amber-50"
               >
                 {question.label}
               </button>

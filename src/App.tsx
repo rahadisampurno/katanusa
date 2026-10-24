@@ -1,23 +1,51 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { JSX } from 'react';
-import { createBrowserRouter } from 'react-router';
+import { lazy, Suspense, type JSX } from 'react';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
-import Login from './pages/Auth/Login';
-import Signup from './pages/Auth/Signup';
-import Verify from './pages/Auth/Verify';
-import protectedLoader from './pages/Auth/loader/Protected.loader';
+import protectedLoader, {
+  reviewerLoader,
+  expertLoader,
+  adminLoader,
+} from './pages/Auth/loader/Protected.loader';
 import publicLoader from './pages/Auth/loader/Public.loader';
 import verifyLoader from './pages/Auth/loader/Verify.loader';
-import BookingHistory from './pages/Booking/BookingHistory';
-import ExpertChatPage from './pages/Chat/ExpertChatPage';
 import expertChatPageLoader from './pages/Chat/ExpertChatPage.loader';
-import Dashboard from './pages/Dashboard/Dashboard';
-import Transaction from './pages/Dashboard/Transaction';
-import BrowseExperts from './pages/Experts/BrowseExperts';
-import DetailExperts from './pages/Experts/DetailExperts';
-import About from './pages/Home/About';
+import { WorkspaceProvider } from './context/WorkspaceContext';
 import LandingPage from './pages/Home/LandingPage';
-import PaymentSuccess from './pages/Payment/PaymentSuccess';
+
+const Login = lazy(() => import('./pages/Auth/Login'));
+const Signup = lazy(() => import('./pages/Auth/Signup'));
+const Verify = lazy(() => import('./pages/Auth/Verify'));
+const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/Auth/ResetPassword'));
+const BookingHistory = lazy(() => import('./pages/Booking/BookingHistory'));
+const ExpertChatPage = lazy(() => import('./pages/Chat/ExpertChatPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
+const Transaction = lazy(() => import('./pages/Dashboard/Transaction'));
+const BrowseExperts = lazy(() => import('./pages/Experts/BrowseExperts'));
+const DetailExperts = lazy(() => import('./pages/Experts/DetailExperts'));
+const ApplyExpertPage = lazy(() => import('./pages/Experts/ApplyExpertPage'));
+const CandidateApplicationPage = lazy(
+  () => import('./pages/Dashboard/Candidate/CandidateApplicationPage'),
+);
+const ReviewQueue = lazy(() => import('./pages/Dashboard/ReviewQueue'));
+const KnowledgeReviewQueue = lazy(
+  () => import('./pages/Dashboard/Reviewer/KnowledgeReviewQueue'),
+);
+const KnowledgeReviewDetail = lazy(
+  () => import('./pages/Dashboard/Reviewer/KnowledgeReviewDetail'),
+);
+const AdminOverview = lazy(() => import('./pages/Dashboard/Admin/AdminOverview'));
+const AdminExpertApplications = lazy(
+  () => import('./pages/Dashboard/Admin/AdminExpertApplications'),
+);
+const AdminExperts = lazy(() => import('./pages/Dashboard/Admin/AdminExperts'));
+const AdminReviewers = lazy(() => import('./pages/Dashboard/Admin/AdminReviewers'));
+const AdminAudit = lazy(() => import('./pages/Dashboard/Admin/AdminAudit'));
+const AdminKnowledge = lazy(() => import('./pages/Dashboard/Admin/AdminKnowledge'));
+const AdminPersonas = lazy(() => import('./pages/Dashboard/Admin/AdminPersonas'));
+const About = lazy(() => import('./pages/Home/About'));
+const PaymentSuccess = lazy(() => import('./pages/Payment/PaymentSuccess'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,7 +63,16 @@ const router = createBrowserRouter([
     element: <LandingPage />,
   },
   {
+    path: '/signup',
+    element: <Navigate to="/auth/signup" replace />,
+  },
+  {
+    path: '/login',
+    element: <Navigate to="/auth/login" replace />,
+  },
+  {
     path: '/booking-history',
+    loader: protectedLoader,
     element: <BookingHistory />,
   },
   {
@@ -55,6 +92,14 @@ const router = createBrowserRouter([
         loader: verifyLoader,
         element: <Verify />,
       },
+      {
+        path: '/auth/forgot-password',
+        element: <ForgotPassword />,
+      },
+      {
+        path: '/auth/reset-password',
+        element: <ResetPassword />,
+      },
     ],
   },
 
@@ -63,6 +108,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '/payment/success',
+        loader: protectedLoader,
         element: <PaymentSuccess />,
       },
     ],
@@ -71,6 +117,11 @@ const router = createBrowserRouter([
   {
     path: '/about',
     element: <About />,
+  },
+  {
+    path: '/expert/apply',
+    loader: protectedLoader,
+    element: <ApplyExpertPage />,
   },
   {
     path: '/experts',
@@ -86,7 +137,10 @@ const router = createBrowserRouter([
       },
       {
         path: '/experts/:id/chats',
-        loader: expertChatPageLoader,
+        loader: async (args) => {
+          const authResult = await protectedLoader();
+          return authResult ?? (await expertChatPageLoader(args));
+        },
         element: <ExpertChatPage />,
       },
     ],
@@ -100,8 +154,147 @@ const router = createBrowserRouter([
         element: <Dashboard />,
       },
       {
+        path: '/dashboard/konsultasi',
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pembayaran',
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/koleksi',
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/notifikasi',
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/profil',
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/application',
+        element: <CandidateApplicationPage />,
+      },
+      {
+        path: '/dashboard/application/activation',
+        element: <CandidateApplicationPage />,
+      },
+      {
+        path: '/dashboard/pakar',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/permintaan',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/kalender',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/layanan',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/profil',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/keuangan',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/ulasan',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/materi',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/analitik',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
+        path: '/dashboard/pakar/keselamatan',
+        loader: expertLoader,
+        element: <Dashboard />,
+      },
+      {
         path: '/dashboard/transaction',
         element: <Transaction />,
+      },
+      {
+        path: '/dashboard/reviews',
+        loader: reviewerLoader,
+        element: <ReviewQueue />,
+      },
+    ],
+  },
+  {
+    path: '/reviewer',
+    loader: reviewerLoader,
+    children: [
+      {
+        path: '/reviewer/applications',
+        element: <ReviewQueue />,
+      },
+      {
+        path: '/reviewer/applications/:applicationId',
+        element: <ReviewQueue />,
+      },
+      {
+        path: '/reviewer/knowledge',
+        element: <KnowledgeReviewQueue />,
+      },
+      {
+        path: '/reviewer/knowledge/:versionId',
+        element: <KnowledgeReviewDetail />,
+      },
+    ],
+  },
+  {
+    path: '/admin',
+    loader: adminLoader,
+    children: [
+      {
+        path: '/admin',
+        element: <AdminOverview />,
+      },
+      {
+        path: '/admin/applications',
+        element: <AdminExpertApplications />,
+      },
+      {
+        path: '/admin/experts',
+        element: <AdminExperts />,
+      },
+      {
+        path: '/admin/reviewers',
+        element: <AdminReviewers />,
+      },
+      {
+        path: '/admin/knowledge',
+        element: <AdminKnowledge />,
+      },
+      {
+        path: '/admin/personas',
+        element: <AdminPersonas />,
+      },
+      {
+        path: '/admin/audit',
+        element: <AdminAudit />,
       },
     ],
   },
@@ -110,7 +303,17 @@ const router = createBrowserRouter([
 const App = (): JSX.Element => {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <WorkspaceProvider>
+        <Suspense
+          fallback={
+            <div className="flex min-h-screen items-center justify-center bg-white text-sm text-gray-600">
+              Memuat KataNusa…
+            </div>
+          }
+        >
+          <RouterProvider router={router} />
+        </Suspense>
+      </WorkspaceProvider>
     </QueryClientProvider>
   );
 };

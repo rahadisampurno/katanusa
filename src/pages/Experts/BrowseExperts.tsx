@@ -4,17 +4,26 @@ import { useNavigate } from 'react-router';
 import { useDebounce } from 'use-debounce';
 import ExpertImage from '../../components/experts/ExpertImage.tsx';
 import FilterDropdown from '../../components/experts/FilterDropdown.tsx';
+import ScopedBadges from '../../components/experts/ScopedBadges.tsx';
 import Footer from '../../components/layout/Footer.tsx';
 import Navbar from '../../components/layout/Navbar';
-import { experts } from '../../data/experts.ts';
+import { experts as localStaticExperts } from '../../data/experts.ts';
+import network from '../../libs/network.ts';
 
 const ITEMS_PER_PAGE = 12;
+
+// Sesuai prinsip R2-1 & Cutover #9: unpublish real-person entries yang belum verified secara hukum
+// Gunakan persona virtual terverifikasi sebagai baseline aman
+const verifiedBaseExperts = localStaticExperts
+  .filter((expert) => expert.isAi)
+  .map((expert) => ({ ...expert, realExpertReferences: [] }));
 
 const BrowseExpertsPage = (): JSX.Element => {
   const navigate = useNavigate();
 
+  const [allExperts, setAllExperts] = useState(verifiedBaseExperts);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredExperts, setFilteredExperts] = useState(experts);
+  const [filteredExperts, setFilteredExperts] = useState(verifiedBaseExperts);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Filter states
@@ -27,26 +36,40 @@ const BrowseExpertsPage = (): JSX.Element => {
 
   const [debouncedSearchQuery] = useDebounce(searchQuery, 500);
 
-  // Extract unique values for filters
-  const uniqueRoles = useMemo(() => {
-    const roles = experts.map((expert) => expert.role);
-    return Array.from(new Set(roles)).sort();
+  // Ambil profil pakar terkelola dari server (governed profiles)
+  useEffect(() => {
+    network
+      .get('/experts')
+      .then((res) => {
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setAllExperts(res.data);
+        }
+      })
+      .catch((err) => {
+        console.warn('Gagal memuat katalog pakar dari server, menggunakan basis aman:', err);
+      });
   }, []);
 
+  // Extract unique values for filters
+  const uniqueRoles = useMemo(() => {
+    const roles = allExperts.map((expert) => expert.role);
+    return Array.from(new Set(roles)).sort();
+  }, [allExperts]);
+
   const uniqueSuku = useMemo(() => {
-    const suku = experts
+    const suku = allExperts
       .map((expert) => expert.suku)
       .filter((s): s is string => s !== undefined);
     return Array.from(new Set(suku)).sort();
-  }, []);
+  }, [allExperts]);
 
   const uniqueSpecialties = useMemo(() => {
-    const specialties = experts.flatMap((expert) => expert.specialties);
+    const specialties = allExperts.flatMap((expert) => expert.specialties);
     return Array.from(new Set(specialties)).sort();
-  }, []);
+  }, [allExperts]);
 
   const handleSearch = useCallback(() => {
-    let filtered = experts;
+    let filtered = allExperts;
 
     // Apply search query filter
     if (debouncedSearchQuery) {
@@ -78,7 +101,7 @@ const BrowseExpertsPage = (): JSX.Element => {
     }
 
     // Apply sorting
-    filtered = filtered.sort((a, b) => {
+    filtered = [...filtered].sort((a, b) => {
       if (sortOrder === 'asc') {
         return a.name.localeCompare(b.name);
       } else {
@@ -89,6 +112,7 @@ const BrowseExpertsPage = (): JSX.Element => {
     setFilteredExperts(filtered);
     setCurrentPage(1); // Reset to first page on filter change
   }, [
+    allExperts,
     debouncedSearchQuery,
     selectedRole,
     selectedSuku,
@@ -97,16 +121,8 @@ const BrowseExpertsPage = (): JSX.Element => {
   ]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     handleSearch();
-  }, [
-    debouncedSearchQuery,
-    selectedRole,
-    selectedSuku,
-    selectedSpecialty,
-    sortOrder,
-    handleSearch,
-  ]);
+  }, [handleSearch]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -118,76 +134,29 @@ const BrowseExpertsPage = (): JSX.Element => {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentExperts = filteredExperts.slice(startIndex, endIndex);
 
-  const handlePageChange = (page: number): void => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSortToggle = (): void => {
+  const handleSortToggle = () => {
     setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   };
 
-  const handlePrevious = (): void => {
-    if (currentPage > 1) {
-      handlePageChange(currentPage - 1);
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 400, behavior: 'smooth' });
     }
-  };
-
-  const handleNext = (): void => {
-    if (currentPage < totalPages) {
-      handlePageChange(currentPage + 1);
-    }
-  };
-
-  // Generate page numbers to display
-  const getPageNumbers = (): number[] => {
-    const pages: number[] = [];
-    const maxPagesToShow = 5;
-
-    if (totalPages <= maxPagesToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          pages.push(i);
-        }
-        pages.push(-1); // Ellipsis
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1);
-        pages.push(-1); // Ellipsis
-        for (let i = totalPages - 3; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        pages.push(1);
-        pages.push(-1); // Ellipsis
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pages.push(i);
-        }
-        pages.push(-1); // Ellipsis
-        pages.push(totalPages);
-      }
-    }
-
-    return pages;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-[#1E315A] min-h-screen">
       {/* Header Section with different styling than Home */}
       <div className="bg-primary-dark relative h-[400px] flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-blue-600 to-blue-400">
         <Navbar />
-        <div className="absolute inset-0 bg-center opacity-10 bg-[url('/assets/bg-experts-header.png')]  z-0"></div>
+        <div className="absolute inset-0 bg-center opacity-10 bg-[url('/assets/bg-experts-header.png')] z-0"></div>
         <div className="relative z-10 text-center mt-10">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Direktori Pakar Budaya
+          <h1 className="text-4xl font-bold text-white mb-2 font-itim">
+            Direktori Pakar &amp; Penjaga Tradisi
           </h1>
-          <p className="text-blue-200 max-w-xl mx-auto">
-            Cari dan temukan ahli budaya yang sesuai dengan minat dan kebutuhan
-            Anda dari seluruh Indonesia.
+          <p className="text-blue-100 max-w-xl mx-auto text-sm">
+            Temukan budayawan terverifikasi resmi dan AI Persona Budaya dari seluruh kepulauan Nusantara.
           </p>
         </div>
       </div>
@@ -200,8 +169,8 @@ const BrowseExpertsPage = (): JSX.Element => {
             <Search className="absolute left-4 top-3.5 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Cari berdasarkan nama, keahlian atau bidang"
-              className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Cari berdasarkan nama, keahlian, atau daerah asal..."
+              className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
@@ -233,15 +202,15 @@ const BrowseExpertsPage = (): JSX.Element => {
       {/* Grid Content */}
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-6">
-          <p className="text-gray-600">
+          <p className="text-gray-300 text-sm">
             Menampilkan {startIndex + 1}-
             {Math.min(endIndex, filteredExperts.length)} dari{' '}
-            {filteredExperts.length} pakar.
+            {filteredExperts.length} pakar terverifikasi.
           </p>
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-300">
             Urutkan:{' '}
             <span
-              className="text-black font-bold cursor-pointer hover:text-blue-600 transition-colors"
+              className="text-amber-400 font-bold cursor-pointer hover:underline transition-colors"
               onClick={handleSortToggle}
             >
               {sortOrder === 'asc' ? 'A - Z' : 'Z - A'}
@@ -251,76 +220,68 @@ const BrowseExpertsPage = (): JSX.Element => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {currentExperts.map((expert) => (
-            <ExpertImage
-              key={expert.id}
-              alt={expert.name}
-              image={expert.image}
-              name={expert.name}
-              caption={expert.role}
-              isAi={expert.isAi}
-              onClick={() => navigate(`/experts/${expert.id}`)}
-            />
+            <div key={expert.id} className="flex flex-col gap-2">
+              <ExpertImage
+                alt={expert.name}
+                image={expert.image}
+                name={expert.name}
+                caption={expert.role}
+                isAi={expert.isAi}
+                onClick={() => navigate(`/experts/${expert.id}`)}
+              />
+              {'badges' in expert && expert.badges ? (
+                <div className="px-1 pt-1">
+                  <ScopedBadges badges={expert.badges as Record<string, boolean>} />
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="mt-12 flex flex-col items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex justify-center items-center gap-2 mt-12">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-lg border border-white/20 text-white ${
+                currentPage === 1
+                  ? 'opacity-40 cursor-not-allowed'
+                  : 'hover:bg-white/10 cursor-pointer'
+              }`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
-                onClick={handlePrevious}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Previous page"
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === page
+                    ? 'bg-amber-400 text-slate-900 font-bold'
+                    : 'text-white hover:bg-white/10'
+                }`}
               >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
+                {page}
               </button>
+            ))}
 
-              <div className="flex items-center gap-1">
-                {getPageNumbers().map((page, index) => {
-                  if (page === -1) {
-                    return (
-                      <span
-                        key={`ellipsis-${index}`}
-                        className="px-3 py-2 text-gray-400"
-                      >
-                        ...
-                      </span>
-                    );
-                  }
-
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={handleNext}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Next page"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-500">
-              Halaman {currentPage} dari {totalPages}
-            </p>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-lg border border-white/20 text-white ${
+                currentPage === totalPages
+                  ? 'opacity-40 cursor-not-allowed'
+                  : 'hover:bg-white/10 cursor-pointer'
+              }`}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         )}
       </div>
+
       <Footer />
     </div>
   );

@@ -1,3 +1,5 @@
+import type { KnowledgeSource } from './rag';
+
 export type SenderType = 'user' | 'expert' | 'ai';
 
 export interface ChatSession {
@@ -17,8 +19,10 @@ export interface ChatMessage {
   text: string;
   additional?: {
     suggestedQuestions?: SuggestedQuestion[];
-    [key: string]: any;
+    source?: KnowledgeSource[];
+    experts?: Array<{ name: string; role?: string }>;
   };
   timestamp: string;
   id: string;
+  channel?: 'text' | 'voice';
 }

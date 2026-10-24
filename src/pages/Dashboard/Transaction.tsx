@@ -7,11 +7,15 @@ import {
   ChevronRight,
   Filter,
   Loader2,
+  Receipt,
+  Search,
+  X,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import ReactPaginate from 'react-paginate';
+import { PerisaiTalawangIcon } from '../../components/icons/NusantaraIcons';
 import Sidebar from '../../components/layout/Sidebar';
 import network from '../../libs/network';
 
@@ -66,24 +70,26 @@ const Transaction: React.FC = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
 
-  // Filters State (Client-side for now as API only supports page/limit)
-  const [statusFilter, setStatusFilter] = useState<
-    'all' | 'success' | 'pending'
-  >('all');
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
-    null,
-    null,
-  ]);
+  // Filters State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'pending'>('all');
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
+
+  // Reset page when filter or search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, startDate, endDate]);
 
   // Fetch Data
   const { data, isLoading, isError } = useQuery<BookingResponse>({
-    queryKey: ['bookings', page, limit],
+    queryKey: ['transactions', page, limit],
     queryFn: async () => {
       const response = await network.get('/booking', {
         params: {
           page,
           limit,
+          scope: 'all',
         },
       });
       return response.data;
@@ -100,74 +106,98 @@ const Transaction: React.FC = () => {
     }).format(amount);
   };
 
-  const getStatusColor = (isPaid: boolean): string => {
-    return isPaid
-      ? 'bg-green-100 text-green-800'
-      : 'bg-yellow-100 text-yellow-800';
-  };
-
-  const getStatusText = (isPaid: boolean): string => {
-    return isPaid ? 'success' : 'pending';
-  };
-
   const handlePageClick = (event: { selected: number }): void => {
     setPage(event.selected + 1);
   };
 
-  // Client-side filtering (applied to the fetched page)
-  // Note: Ideally filtering should be server-side.
-  // Since the prompt specified only page/limit for the API,
-  // we filter the displayed data.
   const filteredItems =
     data?.data.filter((item) => {
       const matchesStatus =
         statusFilter === 'all'
           ? true
           : statusFilter === 'success'
-            ? item.isPaid
-            : !item.isPaid;
+          ? item.isPaid
+          : !item.isPaid;
 
       const matchesDate =
         startDate && endDate
           ? dayjs(item.created_at).isBetween(startDate, endDate, 'day', '[]')
           : true;
 
-      return matchesStatus && matchesDate;
+      const matchesSearch = searchQuery.trim()
+        ? item.bookingId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.expert?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.expert?.suku?.toLowerCase().includes(searchQuery.toLowerCase())
+        : true;
+
+      return matchesStatus && matchesDate && matchesSearch;
     }) || [];
 
   const pageCount = data?.meta ? Math.ceil(data.meta.total / limit) : 0;
 
   return (
-    <Sidebar title="Transaction History">
+    <Sidebar title="Riwayat Sesi &amp; Apresiasi">
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+        {/* Header & Filter Controls */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#132346]/80 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-white/10 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <Receipt className="w-5 h-5 text-amber-400" />
+            <div>
+              <h2 className="text-lg font-bold font-itim text-white">
+                Daftar Bimbingan &amp; Apresiasi Pelestarian
+              </h2>
+              <p className="text-xs text-slate-400">
+                Semua catatan bimbingan tutur bahasa dan apresiasi pelestarian bersama peminat budaya
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Cari kode booking, pakar, atau suku..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 py-2 bg-[#1E315A] border border-white/10 rounded-xl text-white placeholder-slate-400 text-xs outline-none focus:border-amber-400 w-full sm:w-56"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
             {/* Status Filter */}
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
               <select
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none appearance-none bg-white w-full sm:w-40"
+                className="pl-9 pr-8 py-2 bg-[#1E315A] border border-white/10 rounded-xl text-white text-xs outline-none focus:border-amber-400 cursor-pointer w-full sm:w-44"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
               >
-                <option value="all">All Status</option>
-                <option value="success">Success</option>
-                <option value="pending">Pending</option>
+                <option value="all">Semua Status Sesi</option>
+                <option value="success">Terkonfirmasi &amp; Terjadwal</option>
+                <option value="pending">Menunggu Konfirmasi</option>
               </select>
             </div>
 
             {/* Date Range Picker */}
-            <div className="relative z-10">
-              <CalendarIcon className="absolute left-3 top-1/2 z-10 transform -translate-y-1/2 text-gray-700 w-4 h-4" />
+            <div className="relative">
+              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 z-10 pointer-events-none" />
               <DatePicker
                 selectsRange={true}
                 startDate={startDate}
                 endDate={endDate}
-                onChange={(update) => {
-                  setDateRange(update);
-                }}
-                placeholderText="Filter by Date Range"
-                className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none w-full sm:w-64"
+                onChange={(update) => setDateRange(update)}
+                placeholderText="Filter Rentang Tanggal"
+                className="pl-9 pr-4 py-2 bg-[#1E315A] border border-white/10 rounded-xl text-white placeholder-slate-400 text-xs outline-none focus:border-amber-400 w-full sm:w-60"
                 dateFormat="dd MMM yyyy"
                 isClearable
               />
@@ -175,78 +205,88 @@ const Transaction: React.FC = () => {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[400px] relative">
+        {/* Table Container */}
+        <div className="bg-[#132346]/90 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden shadow-2xl min-h-[400px] relative">
           {isLoading && (
-            <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+            <div className="absolute inset-0 bg-[#0F1A34]/80 z-20 flex flex-col items-center justify-center gap-2">
+              <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+              <span className="text-xs text-slate-400">Memuat riwayat sesi...</span>
             </div>
           )}
 
           {isError ? (
-            <div className="flex items-center justify-center h-64 text-red-500">
-              Failed to load transactions. Please try again.
+            <div className="flex items-center justify-center h-64 text-red-400 text-sm">
+              Gagal memuat daftar riwayat bimbingan &amp; tali asih. Silakan coba beberapa saat lagi.
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Date
+                    <tr className="bg-[#0F1A34] border-b border-white/10">
+                      <th className="px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                        Tanggal
                       </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Transaction ID
+                      <th className="px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                        Kode Sesi Bimbingan
                       </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Booking Session
+                      <th className="px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                        Bentuk Sesi
                       </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Fee
+                      <th className="px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                        Apresiasi
                       </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Status
+                      <th className="px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                        Status Sesi
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-white/5">
                     {filteredItems.length > 0 ? (
                       filteredItems.map((transaction) => (
                         <tr
                           key={transaction.id}
-                          className="hover:bg-gray-50 transition-colors"
+                          className="hover:bg-white/5 transition-colors"
                         >
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {dayjs(transaction.created_at).format(
-                              'DD MMM YYYY',
-                            )}
+                          <td className="px-6 py-4 text-xs text-slate-300">
+                            {dayjs(transaction.created_at).format('DD MMM YYYY, HH:mm')}
                           </td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <td className="px-6 py-4 text-xs font-mono font-semibold text-amber-300">
                             {transaction.bookingId}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
+                          <td className="px-6 py-4 text-xs text-white font-medium">
                             {transaction.sessionType.label}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
+                          <td className="px-6 py-4 text-xs font-semibold text-slate-200">
                             {formatCurrency(transaction.totalAmount)}
                           </td>
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(transaction.isPaid)}`}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                                transaction.isPaid
+                                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
+                                  : 'bg-amber-500/15 text-amber-300 border border-amber-400/30'
+                              }`}
                             >
-                              {getStatusText(transaction.isPaid)}
+                              {transaction.isPaid ? '✓ Terkonfirmasi & Terjadwal' : 'Menunggu Konfirmasi'}
                             </span>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td
-                          colSpan={5}
-                          className="px-6 py-8 text-center text-gray-500"
-                        >
-                          No transactions found.
+                        <td colSpan={5} className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-400/20 flex items-center justify-center text-amber-400 mb-2">
+                              <PerisaiTalawangIcon className="w-6 h-6" />
+                            </div>
+                            <p className="text-sm font-semibold text-white">
+                              Belum Ada Riwayat Sesi Bimbingan
+                            </p>
+                            <p className="text-xs text-slate-400 max-w-sm">
+                              Tidak ada riwayat sesi yang cocok dengan filter yang dipilih saat ini.
+                            </p>
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -256,18 +296,11 @@ const Transaction: React.FC = () => {
 
               {/* Pagination */}
               {data && data.meta.total > 0 && (
-                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-                  <div className="text-sm text-gray-500">
-                    Showing{' '}
-                    <span className="font-medium">
-                      {(page - 1) * limit + 1}
-                    </span>{' '}
-                    to{' '}
-                    <span className="font-medium">
-                      {Math.min(page * limit, data.meta.total)}
-                    </span>{' '}
-                    of <span className="font-medium">{data.meta.total}</span>{' '}
-                    results
+                <div className="px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0F1A34]">
+                  <div className="text-xs text-slate-400">
+                    Menampilkan <span className="font-semibold text-white">{(page - 1) * limit + 1}</span> -{' '}
+                    <span className="font-semibold text-white">{Math.min(page * limit, data.meta.total)}</span> dari{' '}
+                    <span className="font-semibold text-amber-300">{data.meta.total}</span> hasil
                   </div>
                   <ReactPaginate
                     previousLabel={<ChevronLeft className="w-4 h-4" />}
@@ -278,17 +311,13 @@ const Transaction: React.FC = () => {
                     marginPagesDisplayed={2}
                     pageRangeDisplayed={3}
                     onPageChange={handlePageClick}
-                    containerClassName="flex items-center gap-2"
-                    pageClassName="rounded-md"
-                    pageLinkClassName="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 text-gray-600 transition-colors"
-                    activeLinkClassName="!bg-red-600 !text-white !border-red-600"
-                    previousClassName="rounded-md"
-                    previousLinkClassName="p-1 block border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    nextClassName="rounded-md"
-                    nextLinkClassName="p-1 block border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    breakClassName="text-gray-400"
-                    disabledClassName="opacity-50 cursor-not-allowed"
-                    renderOnZeroPageCount={null}
+                    containerClassName="flex items-center gap-1.5"
+                    pageClassName="rounded-lg"
+                    pageLinkClassName="px-3 py-1.5 border border-white/10 rounded-lg text-xs hover:bg-white/10 text-slate-300 transition-colors"
+                    activeLinkClassName="!bg-amber-500 !text-[#132346] !font-bold !border-amber-400"
+                    previousLinkClassName="p-1.5 border border-white/10 rounded-lg text-xs hover:bg-white/10 text-slate-300 flex items-center justify-center"
+                    nextLinkClassName="p-1.5 border border-white/10 rounded-lg text-xs hover:bg-white/10 text-slate-300 flex items-center justify-center"
+                    disabledLinkClassName="opacity-30 cursor-not-allowed"
                   />
                 </div>
               )}

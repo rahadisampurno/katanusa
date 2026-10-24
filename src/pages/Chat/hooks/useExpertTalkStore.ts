@@ -18,7 +18,9 @@ type UseExpertTalkStore = {
   isListening: boolean;
   isAiSpeaking: boolean;
   isRagSearching: boolean;
+  interimTranscript: string;
   ragSearchingCount: number;
+  errorMessage: string | null;
   setIsScreenSharing: (isScreenSharing: boolean) => void;
   setIsVideoEnabled: (isVideoEnabled: boolean) => void;
   setCallStatus: (callStatus: CallStatusEnum) => void;
@@ -26,7 +28,9 @@ type UseExpertTalkStore = {
   setIsListening: (isListening: boolean) => void;
   setIsAiSpeaking: (isAiSpeaking: boolean) => void;
   setIsRagSearching: (active: boolean) => void;
+  setInterimTranscript: (interimTranscript: string) => void;
   resetRagSearching: () => void;
+  setErrorMessage: (errorMessage: string | null) => void;
 };
 
 const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
@@ -37,7 +41,9 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
   isListening: false,
   isAiSpeaking: false,
   isRagSearching: false,
+  interimTranscript: '',
   ragSearchingCount: 0,
+  errorMessage: null,
   setIsScreenSharing(isScreenSharing: boolean): void {
     set((state) => ({
       ...state,
@@ -86,12 +92,18 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
       };
     });
   },
+  setInterimTranscript(interimTranscript: string): void {
+    set((state) => ({ ...state, interimTranscript }));
+  },
   resetRagSearching(): void {
     set((state) => ({
       ...state,
       ragSearchingCount: 0,
       isRagSearching: false,
     }));
+  },
+  setErrorMessage(errorMessage: string | null): void {
+    set((state) => ({ ...state, errorMessage }));
   },
 }));
 

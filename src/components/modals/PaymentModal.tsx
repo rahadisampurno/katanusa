@@ -2,8 +2,10 @@ import { useMutation } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import auth from '../../libs/auth';
 import network from '../../libs/network';
+import type { UserDataType } from '../../types/auth';
 import Button from '../ui/Button';
 
 interface Expert {
@@ -25,7 +27,7 @@ export interface BookingData {
   date: string; // Formatted date string or dayjs object
   time: string;
   sessionType: SessionType;
-  userData: any;
+  userData: UserDataType | null;
 }
 
 interface PaymentModalProps {
@@ -39,6 +41,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   onClose,
   bookingData,
 }) => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [customerName, setCustomerName] = useState<string>();
   const [customerEmail, setCustomerEmail] = useState<string>();
@@ -66,13 +69,35 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const { mutate: bookExpert } = useMutation({
     mutationFn: async () =>
       await network.post('/booking', {
-        ...bookingData,
-        totalAmount,
-        createdBy: auth.getUserData() ?? {},
+        expert: bookingData?.expert,
+        date: bookingData?.date,
+        time: bookingData?.time,
+        sessionType: bookingData?.sessionType,
       }),
     onSuccess: (response) => {
-      console.log(response);
-      (window as any).snap.pay(response.data.paymentResult.token);
+      const payment = response.data.paymentResult as {
+        provider: 'mock' | 'midtrans';
+        token?: string;
+        redirectUrl: string;
+      };
+      if (payment.provider === 'mock') {
+        void navigate(
+          `/payment/success?order_id=${response.data.result.bookingId}&provider=mock`,
+        );
+      } else if (payment.token && (window as any).snap?.pay) {
+        (window as any).snap.pay(payment.token, {
+          onSuccess: (): void => {
+            void navigate(
+              `/payment/success?order_id=${response.data.result.bookingId}`,
+            );
+          },
+          onPending: (): void => {
+            void navigate('/booking-history');
+          },
+        });
+      } else {
+        window.location.assign(payment.redirectUrl);
+      }
       setIsLoading(false);
     },
     onError: (err) => {
@@ -102,7 +127,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const platformFee = 5000;
   const ppn = (sessionType.price + platformFee) * 0.11;
-  const totalAmount = sessionType.price + platformFee + ppn;
+  const totalAmount = Math.round(sessionType.price + platformFee + ppn);
 
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('id-ID', {

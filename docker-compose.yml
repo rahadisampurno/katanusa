@@ -2,8 +2,14 @@ services:
   katanusa-web:
     container_name: katanusa-web
     env_file:
-      - .env.local
-    build: 
+      - path: .env
+        required: false
+      - path: .env.local
+        required: false
+    build:
       context: .
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8081/api}
+        VITE_MIDTRANS_CLIENT_KEY: ${VITE_MIDTRANS_CLIENT_KEY:-}
     ports:
       - 8085:8085

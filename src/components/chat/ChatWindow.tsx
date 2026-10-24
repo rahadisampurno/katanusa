@@ -1,14 +1,18 @@
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useRef } from 'react';
-import { useLoaderData, useNavigate } from 'react-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLoaderData, useNavigate, useParams, useSearchParams } from 'react-router';
 import { v1 } from 'uuid';
+import network from '../../libs/network.ts';
+import { resolveExpertPersona } from '../../data/resolveExpertPersona.ts';
 import useChatActions from '../../pages/Chat/hooks/useChatActions';
 import useExpertChatStore from '../../pages/Chat/hooks/useExpertChatStore.ts';
 import useExpertTalk from '../../pages/Chat/hooks/useExpertTalk.ts';
 import useExpertTalkStore, {
   CallStatusEnum,
 } from '../../pages/Chat/hooks/useExpertTalkStore.ts';
+import type { ChatMessage } from '../../types/chat.ts';
 import type { Expert } from '../../types/expert.ts';
+import type { TranscriptEntry } from '../../types/audio.ts';
 import TalkEnd from '../talk/TalkEnd.tsx';
 import ChatBubble from './ChatBubble';
 import ChatHeader from './ChatHeader';
@@ -16,20 +20,149 @@ import ChatInput from './ChatInput';
 
 const ChatWindow: React.FC = () => {
   const navigate = useNavigate();
-  const { data: expert } = useLoaderData() as { data: Expert };
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const loaderData = useLoaderData() as { data?: Expert } | undefined;
 
-  const { messages, setMessages, isLoading } = useExpertChatStore();
+  const [expert, setExpert] = useState<Expert | null>(loaderData?.data || null);
+  const [isResolving, setIsResolving] = useState(!loaderData?.data);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [historyLoadError, setHistoryLoadError] = useState<string | null>(null);
+  const [errorNotFound, setErrorNotFound] = useState(false);
+  const autoCallTriggered = useRef(false);
+
+  // Sync loader data or fetch by URL param if loader returned undefined
+  useEffect(() => {
+    if (loaderData?.data) {
+      setExpert(loaderData.data);
+      setIsResolving(false);
+      return;
+    }
+
+    if (id) {
+      setIsResolving(true);
+      network
+        .get(`/experts/${id}`)
+        .then((res) => {
+          if (res.data) {
+            setExpert(resolveExpertPersona(res.data));
+            setErrorNotFound(false);
+          } else {
+            setErrorNotFound(true);
+          }
+        })
+        .catch(() => {
+          setErrorNotFound(true);
+        })
+        .finally(() => {
+          setIsResolving(false);
+        });
+    } else {
+      setIsResolving(false);
+      setErrorNotFound(true);
+    }
+  }, [loaderData, id]);
+
+  const {
+    messages,
+    setMessages,
+    isLoading,
+    setConversationId,
+    setPersonaId,
+  } = useExpertChatStore();
   const {
     callStatus,
     liveTranscript,
-    isListening,
-    isAiSpeaking,
-    isRagSearching,
-  } = useExpertTalkStore() as any;
-  const { startCall, endCall } = useExpertTalk(expert);
+    errorMessage: callError,
+  } = useExpertTalkStore();
+  const { startCall, endCall, mediaStreamRef } = useExpertTalk(expert);
   const { sendMessage } = useChatActions(expert);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [activeVoiceMessageId, setActiveVoiceMessageId] = useState<string | null>(null);
+  const [loadingVoiceMessageId, setLoadingVoiceMessageId] = useState<string | null>(null);
+  const chatAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopChatVoice = useCallback(() => {
+    if (chatAudioRef.current) {
+      chatAudioRef.current.pause();
+      chatAudioRef.current.removeAttribute('src');
+      chatAudioRef.current.load();
+      chatAudioRef.current = null;
+    }
+    setActiveVoiceMessageId(null);
+    setLoadingVoiceMessageId(null);
+  }, []);
+
+  const handleToggleVoice = useCallback(
+    async (msgId: string, text: string) => {
+      if (activeVoiceMessageId === msgId) {
+        stopChatVoice();
+        return;
+      }
+
+      stopChatVoice();
+      if (!expert || !text.trim()) return;
+
+      setLoadingVoiceMessageId(msgId);
+      try {
+        const res = await network.post<{ audio: string; mimeType: string }>(
+          '/chat/tts',
+          {
+            text,
+            personaId: expert.id,
+          },
+        );
+
+        if (res.data?.audio) {
+          const audio = new Audio(
+            `data:${res.data.mimeType || 'audio/wav'};base64,${res.data.audio}`,
+          );
+          chatAudioRef.current = audio;
+          setActiveVoiceMessageId(msgId);
+          setLoadingVoiceMessageId(null);
+
+          audio.onended = () => {
+            chatAudioRef.current = null;
+            setActiveVoiceMessageId(null);
+          };
+          audio.onerror = () => {
+            chatAudioRef.current = null;
+            setActiveVoiceMessageId(null);
+          };
+
+          await audio.play();
+          return;
+        }
+      } catch (err) {
+        console.warn('Gagal memutar suara persona:', err);
+      } finally {
+        setLoadingVoiceMessageId(null);
+      }
+    },
+    [activeVoiceMessageId, expert, stopChatVoice],
+  );
+
+  useEffect(() => {
+    return () => {
+      stopChatVoice();
+    };
+  }, [stopChatVoice]);
+
+  // Auto trigger voice call if user arrived via "Mulai Call" (?call=true)
+  useEffect(() => {
+    const shouldCall =
+      searchParams.get('call') === 'true' || searchParams.get('call') === '1';
+    if (
+      shouldCall &&
+      expert &&
+      !autoCallTriggered.current &&
+      callStatus === CallStatusEnum.IDLE
+    ) {
+      autoCallTriggered.current = true;
+      void startCall();
+    }
+  }, [expert, searchParams, callStatus, startCall]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -37,39 +170,119 @@ const ChatWindow: React.FC = () => {
         chatContainerRef.current.scrollHeight;
     }
 
-    window.addEventListener('popstate', () => {
+    const handlePopState = () => {
       if (callStatus === CallStatusEnum.ACTIVE) {
-        endCall();
+        void endCall();
       }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return (): void => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [messages, isLoading, liveTranscript, callStatus, endCall]);
+
+  const buildWelcomeMessage = useCallback((): ChatMessage[] => {
+    if (!expert) return [];
+    const greeting = expert.greeting || `Selamat datang, saya ${expert.name}.`;
+    const topics = expert.specialties.slice(0, 3).join(', ')
+      || `budaya ${expert.suku || 'Nusantara'}`;
+
+    return [{
+      sender: 'ai',
+      text: `${greeting}\n\nSaya dapat membantu menjawab pertanyaan seputar ${topics}. Apa yang ingin Anda pelajari hari ini?`,
+      timestamp: dayjs().format(),
+      id: v1(),
+    }];
+  }, [expert]);
+
+  // Restore server-owned history so text chat and voice call share one context.
+  useEffect(() => {
+    if (!expert) return undefined;
+    let cancelled = false;
+    const storageKey = `katanusa:conversation:${expert.id}`;
+    const storedConversationId = sessionStorage.getItem(storageKey);
+
+    setPersonaId(expert.id);
+    setConversationId(storedConversationId);
+    setHistoryLoadError(null);
+
+    if (!storedConversationId) {
+      setMessages(buildWelcomeMessage());
+      return undefined;
+    }
+
+    setMessages([]);
+    setIsHistoryLoading(true);
+    void network.get<{
+      conversation: { persona_profile_id: string };
+      messages: ChatMessage[];
+    }>(`/chat/conversations/${storedConversationId}`).then((response) => {
+      if (cancelled) return;
+      if (response.data.conversation.persona_profile_id !== expert.id) {
+        throw new Error('Percakapan tidak sesuai dengan AI persona yang dipilih.');
+      }
+      setConversationId(storedConversationId);
+      setMessages(
+        response.data.messages.length > 0
+          ? response.data.messages
+          : buildWelcomeMessage(),
+      );
+    }).catch(() => {
+      if (cancelled) return;
+      sessionStorage.removeItem(storageKey);
+      setConversationId(null);
+      setMessages(buildWelcomeMessage());
+      setHistoryLoadError(
+        'Riwayat lama tidak dapat dimuat. Percakapan baru akan dimulai.',
+      );
+    }).finally(() => {
+      if (!cancelled) setIsHistoryLoading(false);
     });
 
     return (): void => {
-      window.removeEventListener('popstate', () => {});
+      cancelled = true;
     };
-  }, [messages, isLoading, liveTranscript, callStatus]);
+  }, [buildWelcomeMessage, expert, setConversationId, setMessages, setPersonaId]);
 
-  const initialMessages = useCallback(() => {
-    if (expert) {
-      setMessages([
-        {
-          sender: 'ai',
-          text: `Selamat datang! Saya adalah asisten AI dengan nama ${expert.name} dari suku ${expert.suku}. Anda bisa belajar tentang ${expert.specialties.join(', ')}. dan lain - lain`,
-          timestamp: dayjs().format(),
-          id: v1(),
-        },
-      ]);
-    }
-  }, [expert, setMessages]);
+  if (isResolving) {
+    return (
+      <div className="w-full max-w-xl mx-auto bg-white rounded-3xl shadow-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 min-h-[40vh]">
+        <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-gray-700 font-medium text-sm">Menghubungkan ke Pakar Budaya...</p>
+      </div>
+    );
+  }
 
-  // initial
-  useEffect(() => {
-    initialMessages();
-  }, [expert, initialMessages]);
+  if (errorNotFound || !expert) {
+    return (
+      <div className="w-full max-w-xl mx-auto bg-white rounded-3xl shadow-2xl p-8 text-center space-y-4">
+        <h3 className="text-lg font-bold text-gray-900">Pakar Budaya Tidak Ditemukan</h3>
+        <p className="text-xs text-gray-600">
+          Profil pakar yang Anda tuju tidak ditemukan atau belum diverifikasi oleh Dewan Kurator Adat.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/experts')}
+          className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-full transition cursor-pointer"
+        >
+          Kembali ke Para Pakar
+        </button>
+      </div>
+    );
+  }
 
-  if (!expert) return null;
+  const conversationStarters = [
+    `Apa yang perlu saya ketahui tentang ${expert.specialties[0] || `budaya ${expert.suku || 'Nusantara'}`}?`,
+    `Ceritakan tradisi penting dari ${expert.suku || 'daerah ini'}.`,
+    `Bagaimana generasi muda dapat ikut melestarikannya?`,
+  ];
 
   return (
-    <div className="w-full max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl flex flex-col min-h-[60vh] md:min-h-[70vh] h-[calc(100vh-180px)]">
+    <div
+      className="flex w-full flex-col overflow-hidden bg-[#F8F2E7]"
+      style={{ height: 'calc(100dvh - 96px)', minHeight: '560px' }}
+    >
       <ChatHeader
         expert={expert}
         status={
@@ -79,81 +292,98 @@ const ChatWindow: React.FC = () => {
         }
         startCall={startCall}
         onClose={() => {
-          endCall();
-          navigate('/experts');
+          void endCall();
+          const targetId = id || expert?.id;
+          if (targetId) {
+            navigate(`/experts/${targetId}`);
+          } else {
+            navigate('/experts');
+          }
         }}
       />
 
-      {/* Chat Area dengan Background Pattern */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-6 pb-8 bg-[#fdf8f0] relative scroll-smooth"
+        className="relative flex-1 overflow-y-auto bg-[#F8F2E7] px-4 py-8 scroll-smooth sm:px-6 sm:py-10"
       >
-        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('/assets/background-chat.svg')] bg-repeat bg-contain"></div>
+        <div className="pointer-events-none absolute inset-0 bg-[url('/assets/bg-pattern.webp')] bg-contain bg-repeat opacity-[0.025]" />
 
-        {messages.map((msg) => (
-          <ChatBubble
-            key={msg.id}
-            message={msg.text}
-            isUser={msg.sender === 'user'}
-            avatarUrl={msg.sender === 'ai' ? expert?.image : undefined}
-            additional={msg.additional}
-            onOptionClick={sendMessage}
-          />
-        ))}
+        <div className="relative mx-auto max-w-4xl">
+          {messages.map((msg) => (
+            <ChatBubble
+              key={msg.id}
+              message={msg.text}
+              isUser={msg.sender === 'user'}
+              avatarUrl={msg.sender === 'ai' ? expert?.image : undefined}
+              additional={msg.additional}
+              onOptionClick={sendMessage}
+              onSpeak={
+                msg.sender === 'ai'
+                  ? () => void handleToggleVoice(msg.id, msg.text)
+                  : undefined
+              }
+              isPlayingVoice={activeVoiceMessageId === msg.id}
+              isLoadingVoice={loadingVoiceMessageId === msg.id}
+            />
+          ))}
 
-        {liveTranscript.map((msg: any) => (
-          <ChatBubble
-            key={msg.id}
-            message={msg.text}
-            isUser={msg.speaker === 'user'}
-            avatarUrl={msg.speaker === 'ai' ? expert?.image : undefined}
-          />
-        ))}
-
-        {isLoading && (
-          <div className="flex items-end gap-3 justify-start">
-            <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-tl-none shadow-sm flex items-center space-x-2">
-              <span className="block w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-              <span className="block w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-              <span className="block w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+          {messages.length === 1 && !isHistoryLoading && !isLoading && (
+            <div className="ml-12 mt-1 flex flex-wrap gap-2">
+              {conversationStarters.map((question) => (
+                <button
+                  key={question}
+                  type="button"
+                  onClick={() => void sendMessage(question)}
+                  className="rounded-full border border-[#1E315A]/15 bg-transparent px-3.5 py-2 text-left text-xs font-medium leading-5 text-[#1E315A]/75 transition hover:border-amber-600/40 hover:bg-amber-50 hover:text-[#1E315A]"
+                >
+                  {question}
+                </button>
+              ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {isListening &&
-          !isAiSpeaking &&
-          callStatus === CallStatusEnum.ACTIVE && (
-            <div className="flex items-end gap-3 justify-start">
-              <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-tl-none shadow-sm flex items-center space-x-2">
-                <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                <span className="block w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></span>
-                <span className="text-xs text-gray-500 ml-2">
-                  Mendengarkan...
-                </span>
+          {liveTranscript.map((msg: TranscriptEntry) => (
+            <ChatBubble
+              key={msg.id}
+              message={msg.text}
+              isUser={msg.speaker === 'user'}
+              avatarUrl={msg.speaker === 'ai' ? expert?.image : undefined}
+            />
+          ))}
+
+          {(historyLoadError || (callError && callStatus === CallStatusEnum.IDLE)) && (
+            <div className="mx-auto mb-4 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800" role="status">
+              {historyLoadError || callError}
+            </div>
+          )}
+
+          {isHistoryLoading && (
+            <div className="flex items-center justify-center py-8 text-sm text-slate-500">
+              Memuat riwayat percakapan...
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="flex items-end justify-start gap-3 pl-12">
+              <div className="flex items-center space-x-2 rounded-2xl rounded-tl-sm border border-[#1E315A]/10 bg-white px-4 py-3 text-slate-800 shadow-sm">
+                <span className="block h-2 w-2 animate-bounce rounded-full bg-amber-500 [animation-delay:-0.3s]" />
+                <span className="block h-2 w-2 animate-bounce rounded-full bg-amber-500 [animation-delay:-0.15s]" />
+                <span className="block h-2 w-2 animate-bounce rounded-full bg-amber-500" />
               </div>
             </div>
           )}
 
-        {isRagSearching && callStatus === CallStatusEnum.ACTIVE && (
-          <div className="flex items-end gap-3 justify-start mt-2">
-            <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-tl-none shadow-sm flex items-center space-x-2">
-              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-              <span className="block w-2 h-2 bg-yellow-500 rounded-full animate-bounce"></span>
-              <span className="text-xs text-gray-500 ml-2">
-                Mencari sumber...
-              </span>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {callStatus === CallStatusEnum.IDLE ? (
-        <ChatInput />
+        <ChatInput expert={expert} />
       ) : (
-        <TalkEnd endCall={endCall} />
+        <TalkEnd
+          expert={expert}
+          endCall={endCall}
+          mediaStreamRef={mediaStreamRef}
+        />
       )}
     </div>
   );

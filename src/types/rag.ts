@@ -1,23 +1,12 @@
-export type RagType = {
-  similarity: number;
-  content: string;
-};
-
-export type TavilyResultType = {
+export type KnowledgeSource = {
+  citationId?: string;
+  sourceId?: string;
+  versionId?: string;
+  chunkId?: number;
   title: string;
-  url: string;
-  content: string;
-  rawContent: string;
-  score: number;
+  expertName?: string;
+  locator?: string;
+  reviewedAt?: string;
+  url?: string;
+  kind: 'internal' | 'web';
 };
-
-export type TavilyType = {
-  results: TavilyResultType[];
-};
-
-export interface RagResult {
-  rag: RagType;
-  tavily: TavilyType;
-  tavilyQuery: string;
-  fusion: string;
-}

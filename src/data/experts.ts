@@ -6,7 +6,7 @@ export const experts: Expert[] = [
     name: 'Teungku Meurah',
     role: 'Pakar Budaya Aceh',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/10-teungku-meurah.png',
+      '/assets/pakar-virtual/10-teungku-meurah.webp',
     specialties: [
       'Hukum Syariat & Adat',
       'Sejarah Kesultanan Aceh',
@@ -21,31 +21,14 @@ export const experts: Expert[] = [
     suku: 'Aceh',
     accentHints: ['lon', 'droe', 'nyan', 'beh', 'hana', 'pajan'],
     pitch: -0.15,
-    realExpertReferences: [
-      {
-        id: 'f9e8d7c6-b5a4-4321-0987-654321abcdef',
-        name: 'L.K. Ara',
-        role: 'Sastrawan dan Budayawan Aceh, pelestari puisi dan tradisi lisan Gayo.',
-        image:
-          'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/lk-ara.png',
-        specialties: [
-          'Sastra Lisan Gayo',
-          'Puisi Indonesia Modern',
-          'Kebudayaan Aceh',
-          'Antropologi Seni',
-        ],
-        gender: 'pria',
-        isAi: false,
-        suku: 'Aceh',
-      },
-    ],
+    realExpertReferences: [],
   },
   {
     id: 'b2c3d4e5-f6a7-4b5c-8d9e-223344556677',
     name: 'Bli Komang',
     role: 'Pakar Budaya Bali',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/11-bli-komang.png',
+      '/assets/pakar-virtual/11-bli-komang.webp',
     specialties: [
       'Falsafah Tri Hita Karana',
       'Sistem Subak',
@@ -60,31 +43,14 @@ export const experts: Expert[] = [
     suku: 'Bali',
     accentHints: ['nggih', 'suksma', 'tiang', 'bli', 'dumogi', 'men'],
     pitch: 0.0,
-    realExpertReferences: [
-      {
-        id: '11223344-5566-7788-9900-aabbccddeeff',
-        name: 'Prof. Dr. I Wayan Dibia',
-        role: 'Guru Besar Seni Pertunjukan, koreografer, dan penulis buku tentang seni Bali.',
-        image:
-          'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/wayan-dibia.png',
-        specialties: [
-          'Seni Tari Bali',
-          'Seni Karawitan',
-          'Teater Tradisional',
-          'Filsafat Seni Hindu',
-        ],
-        gender: 'pria',
-        isAi: false,
-        suku: 'Bali',
-      },
-    ],
+    realExpertReferences: [],
   },
   {
     id: 'c3d4e5f6-a7b8-4c5d-9e0f-334455667788',
     name: 'Bung Kapitan',
     role: 'Pakar Budaya Maluku',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/12-bung-kapitan.png',
+      '/assets/pakar-virtual/12-bung-kapitan.webp',
     specialties: [
       'Adat Pela Gandong',
       'Sejarah Rempah',
@@ -99,31 +65,14 @@ export const experts: Expert[] = [
     suku: 'Maluku',
     accentHints: ['beta', 'ose', 'ale', 'dangke', 'seng', 'katong'],
     pitch: 0.1,
-    realExpertReferences: [
-      {
-        id: '99887766-5544-3322-1100-ffeeddccbbaa',
-        name: 'Rudi Fofid',
-        role: 'Sastrawan, jurnalis senior, dan budayawan Maluku penerima penghargaan perdamaian.',
-        image:
-          'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/rudi-fofid.png',
-        specialties: [
-          'Sastra Maluku',
-          'Jurnalisme Damai',
-          'Sejarah Sosial Ambon',
-          'Seni Pertunjukan',
-        ],
-        gender: 'pria',
-        isAi: false,
-        suku: 'Maluku',
-      },
-    ],
+    realExpertReferences: [],
   },
   {
     id: 'd4e5f6a7-b8c9-4d5e-0f1a-445566778899',
     name: 'Pace Mambri',
     role: 'Pakar Budaya Papua',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/13-pace-mambri.png',
+      '/assets/pakar-virtual/13-pace-mambri.webp',
     specialties: [
       'Filosofi Noken',
       'Ukiran Asmat & Kamoro',
@@ -138,31 +87,14 @@ export const experts: Expert[] = [
     suku: 'Papua',
     accentHints: ['sa', 'ko', 'kitong', 'trada', 'mo', 'pace', 'kaka'],
     pitch: -0.25,
-    realExpertReferences: [
-      {
-        id: 'aa11bb22-cc33-dd44-ee55-1234567890ab',
-        name: 'Enrico Yory Kondologit',
-        role: 'Antropolog dan Kurator Museum Loka Budaya Universitas Cenderawasih.',
-        image:
-          'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/enrico-kondologit.png',
-        specialties: [
-          'Antropologi Papua',
-          'Seni Ukir Tradisional',
-          'Museologi',
-          'Etnografi Suku-suku Papua',
-        ],
-        gender: 'pria',
-        isAi: false,
-        suku: 'Papua',
-      },
-    ],
+    realExpertReferences: [],
   },
   {
     id: '558e9e41-1046-4a6c-bedb-e5f05da25212',
     name: 'Ambu Pangeusi',
     role: 'Pakar Budaya Sunda',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/ambu-pangeusi.png',
+      '/assets/pakar-virtual/ambu-pangeusi.webp',
     specialties: [
       'Bahasa Sunda',
       'Kebudayaan Sunda',
@@ -176,64 +108,13 @@ export const experts: Expert[] = [
     isAi: true,
     suku: 'Sunda',
     accentHints: ['punten', 'mangga', 'atuh', 'mah', 'teh', 'nya'],
-    pitch: 0.2,
-    realExpertReferences: [
-      {
-        id: 'ad6d1a13-62fb-4688-839f-146b950bf1fb',
-        name: 'Dr. Hawe Setiawan',
-        role: 'Budayawan dan penulis, ahli sastra Sunda & kajian budaya.',
-        image:
-          'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/pak-hawe.png',
-        specialties: [
-          'Bahasa Sunda',
-          'Kebudayaan Sunda',
-          'Kuliner Sunda',
-          'Pariwisata Jawa Barat dan Banten',
-          'Sejarah Sunda',
-        ],
-        gender: 'pria',
-        isAi: false,
-        suku: 'Sunda',
-      },
-      {
-        id: 'fb20c08c-7997-4dd0-b77f-ed083b059c10',
-        name: 'Didin S. Damanhuri',
-        role: 'Tradisi Sunda, Islam & adat, kajian kearifan lokal',
-        image:
-          'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/didin-s-damanhuri.png',
-        specialties: [
-          'Bahasa Sunda',
-          'Kebudayaan Sunda',
-          'Kuliner Sunda',
-          'Pariwisata Jawa Barat dan Banten',
-          'Sejarah Sunda',
-        ],
-        bio: 'Didin S. Damanhuri berperan penting dalam pelestarian budaya melalui pendekatan ekonomi dan kebudayaan yang berbasis nilai-nilai lokal, terutama dengan menggagas konsep Nusantaranomics. Ia menekankan pentingnya membangun sistem ekonomi yang tidak hanya mengandalkan teori Barat, tetapi juga memadukan kearifan lokal, tradisi, dan budaya etnis sebagai fondasi pembangunan Indonesia yang berkelanjutan. Peran dalam Pelestarian Budaya Didin S. Damanhuri aktif menyuarakan perlunya strategi kebudayaan yang berbasis nilai lokal, agar masyarakat Indonesia tidak hanya menjadi pengikut paradigma Barat, tetapi juga mampu mengembangkan identitas budaya sendiri.​ Ia mengkritik jebakan epistemologi, yaitu ketergantungan pada paradigma luar tanpa adaptasi terhadap kebutuhan dan nilai lokal, serta menyerukan transformasi ilmu pengetahuan yang memprioritaskan kesejahteraan rakyat dan keberlanjutan budaya.​ Melalui gagasan Nusantaranomics, Didin mendorong revitalisasi ekonomi yang berakar pada tradisi, budaya, dan semangat agama, sehingga budaya lokal tidak terpinggirkan dalam proses pembangunan',
-        gender: 'pria',
-        isAi: false,
-        suku: 'Sunda',
-        pitch: -0.05,
-      },
-      {
-        id: 'b86a4b79-f7f9-46ec-b276-2461113e2e14',
-        name: 'Prof. Juhaeri Muchtar',
-        role: 'Statistik, diaspora Sunda, advokasi budaya',
-        image:
-          'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/prof-juhaeri-muchtar.png',
-        specialties: [
-          'Bahasa Sunda',
-          'Kebudayaan Sunda',
-          'Kuliner Sunda',
-          'Pariwisata Jawa Barat dan Banten',
-          'Sejarah Sunda',
-        ],
-        bio: 'Prof. Juhaeri Muchtar dikenal sebagai epidemiolog dan ahli statistika, namun perannya dalam pelestarian budaya lebih bersifat inspiratif dan pendidikan melalui karya-karyanya yang menekankan pentingnya sastra dan nilai-nilai lokal dalam pembangunan bangsa. Ia menulis buku berjudul “Statistics of Dreams: Sebuah Memoar” yang tidak hanya membahas statistika, tetapi juga mengandung nilai-nilai kehidupan dan kearifan lokal, serta dijadikan sumber inspirasi bagi generasi muda, khususnya mahasiswa IPB University.​ Kontribusi dalam Pelestarian Budaya Juhaeri Muchtar menekankan bahwa kemajuan Indonesia tidak hanya ditentukan oleh sains dan teknologi, tetapi juga oleh sastra dan budaya, sehingga ia mendorong integrasi nilai-nilai budaya dalam pendidikan dan pengembangan masyarakat.​ Buku dan karyanya dijadikan sebagai sarana untuk menginspirasi dan memotivasi anak-anak muda agar menghargai dan melestarikan budaya serta tradisi lokal.​Sebagai putra daerah Sunda, ia turut membawa nilai-nilai lokal ke kancah internasional, sehingga ikut memperkenalkan budaya Indonesia di luar negeri.​ Peran Prof. Juhaeri Muchtar dalam pelestarian budaya lebih menekankan pada aspek edukatif dan inspiratif, dengan mengintegrasikan nilai-nilai lokal dan budaya ke dalam karya-karya ilmiah serta aktivitas pendidikan yang dapat menginspirasi generasi muda untuk menjaga dan melestarikan budaya Indonesia.',
-        gender: 'pria',
-        isAi: false,
-        suku: 'Sunda',
-        pitch: -0.05,
-      },
-    ],
+    languageCode: 'su-ID',
+    fallbackLanguageCode: 'id-ID',
+    voiceName: 'Damayanti',
+    speakingRate: 0.92,
+    pitch: 0.12,
+    greeting: 'Sampurasun. Mangga, aya nu bade ditaroskeun ka Ambu?',
+    realExpertReferences: [],
   },
   // {
   //   id: '12490118-d3f7-49bc-9cf0-382be0e328fa',
@@ -250,7 +131,7 @@ export const experts: Expert[] = [
     name: 'Ki Waskita',
     role: 'Pakar Budaya Jawa',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/ki-waskita.png',
+      '/assets/pakar-virtual/ki-waskita.webp',
     specialties: [
       'Bahasa Jawa',
       'Adat Jawa',
@@ -281,7 +162,7 @@ export const experts: Expert[] = [
     name: 'Oppung Hasian',
     role: 'Pakar Budaya Batak',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/oppung-hasian.png',
+      '/assets/pakar-virtual/oppung-hasian.webp',
     specialties: ['Adat Batak', 'Ulos', 'Gondang', 'Upacara Adat'],
     bio: 'Oppung Hasian adalah AI yang memaparkan adat Batak: filosofi ulos, musik gondang, sistem kekerabatan, dan upacara adat. Penjelasannya menekankan gotong royong dan martabat keluarga.',
     gender: 'pria',
@@ -304,7 +185,7 @@ export const experts: Expert[] = [
     name: 'Ra Tretan',
     role: 'Pakar Budaya Madura',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/ra-tretan.webp',
+      '/assets/pakar-virtual/ra-tretan.webp',
     specialties: [
       'Adat Madura',
       'Karapan Sapi',
@@ -323,7 +204,7 @@ export const experts: Expert[] = [
     name: 'Encang Jago',
     role: 'Pakar Budaya Betawi',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/encang-jago.png',
+      '/assets/pakar-virtual/encang-jago.webp',
     specialties: ['Lenong', 'Ondel-ondel', 'Gambang Kromong', 'Kuliner Betawi'],
     bio: 'Encang Jago adalah AI Betawi yang mengulas lenong, ondel-ondel, gambang kromong, hingga kuliner khas. Narasinya akrab dan ringan, mencerminkan keramahan budaya Betawi.',
     gender: 'pria',
@@ -349,7 +230,7 @@ export const experts: Expert[] = [
     name: 'Bundo Cadiak',
     role: 'Pakar Budaya Minangkabau',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/bundo-cadiak.webp',
+      '/assets/pakar-virtual/bundo-cadiak.webp',
     specialties: [
       'Adat Minangkabau',
       'Matrilineal',
@@ -369,7 +250,7 @@ export const experts: Expert[] = [
     name: 'Datu Lontara',
     role: 'Pakar Budaya Bugis',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/datu-lontara.webp',
+      '/assets/pakar-virtual/datu-lontara.webp',
     specialties: [
       'Aksara Lontara',
       "Siri' na Pacce",
@@ -383,83 +264,6 @@ export const experts: Expert[] = [
     suku: 'Bugis',
     accentHints: ['ji', 'mi', 'ki'],
     pitch: 0.1,
-  },
-  {
-    id: 'ad6d1a13-62fb-4688-839f-146b950bf1fb',
-    name: 'Dr. Hawe Setiawan',
-    role: 'Budayawan dan penulis, ahli sastra Sunda & kajian budaya.',
-    image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/pak-hawe.png',
-    specialties: [
-      'Bahasa Sunda',
-      'Kebudayaan Sunda',
-      'Kuliner Sunda',
-      'Pariwisata Jawa Barat dan Banten',
-      'Sejarah Sunda',
-    ],
-    bio: 'Dr. Hawe Setiawan memainkan peran penting dalam pelestarian budaya Sunda melalui tulisan, penelitian, dan pengajaran. Ia menggunakan bahasa dan sastra Sunda sebagai medium utama untuk menjaga relevansi budaya Sunda di tengah perubahan zaman, dengan keyakinan bahwa bahasa adalah kunci pelestarian nilai-nilai etos, etika, dan filsafat Sunda yang mulai terkikis di masyarakat modern.',
-    gender: 'pria',
-    isAi: false,
-    articles: ['https://bandungbergerak.id/writer/906/hawe-setiawan'],
-    suku: 'Sunda',
-    pitch: -0.05,
-  },
-  {
-    id: 'b86a4b79-f7f9-46ec-b276-2461113e2e14',
-    name: 'Prof. Juhaeri Muchtar',
-    role: 'Statistik, diaspora Sunda, advokasi budaya',
-    image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/prof-juhaeri-muchtar.png',
-    specialties: [
-      'Bahasa Sunda',
-      'Kebudayaan Sunda',
-      'Kuliner Sunda',
-      'Pariwisata Jawa Barat dan Banten',
-      'Sejarah Sunda',
-    ],
-    bio: 'Prof. Juhaeri Muchtar dikenal sebagai epidemiolog dan ahli statistika, namun perannya dalam pelestarian budaya lebih bersifat inspiratif dan pendidikan melalui karya-karyanya yang menekankan pentingnya sastra dan nilai-nilai lokal dalam pembangunan bangsa. Ia menulis buku berjudul “Statistics of Dreams: Sebuah Memoar” yang tidak hanya membahas statistika, tetapi juga mengandung nilai-nilai kehidupan dan kearifan lokal, serta dijadikan sumber inspirasi bagi generasi muda, khususnya mahasiswa IPB University.​ Kontribusi dalam Pelestarian Budaya Juhaeri Muchtar menekankan bahwa kemajuan Indonesia tidak hanya ditentukan oleh sains dan teknologi, tetapi juga oleh sastra dan budaya, sehingga ia mendorong integrasi nilai-nilai budaya dalam pendidikan dan pengembangan masyarakat.​ Buku dan karyanya dijadikan sebagai sarana untuk menginspirasi dan memotivasi anak-anak muda agar menghargai dan melestarikan budaya serta tradisi lokal.​Sebagai putra daerah Sunda, ia turut membawa nilai-nilai lokal ke kancah internasional, sehingga ikut memperkenalkan budaya Indonesia di luar negeri.​ Peran Prof. Juhaeri Muchtar dalam pelestarian budaya lebih menekankan pada aspek edukatif dan inspiratif, dengan mengintegrasikan nilai-nilai lokal dan budaya ke dalam karya-karya ilmiah serta aktivitas pendidikan yang dapat menginspirasi generasi muda untuk menjaga dan melestarikan budaya Indonesia.',
-    gender: 'pria',
-    isAi: false,
-    suku: 'Sunda',
-    pitch: -0.05,
-  },
-  {
-    id: '010c4146-2cb2-42cf-860e-cb016e30dd21',
-    name: 'Sujiwo Tejo',
-    role: 'Seni Pedalangan (Wayang), Musik, dan Seni Peran.',
-    image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/sujiwo-tejo.png',
-    specialties: [
-      'Bahasa Jawa',
-      'Kebudayaan Jawa',
-      'Pedalangan dan Wayang Jawa',
-      'Musik Tradisional Jawa',
-      'Sejarah Jawa',
-    ],
-    bio: 'Sujiwo Tejo adalah seniman Indonesia yang dikenal sebagai penjaga ruh kebudayaan Nusantara melalui karya-karya lintas medium seperti wayang, musik, sastra, hingga lukisan. Dengan kecerdasan artistik yang khas, ia meramu kritik sosial, falsafah hidup, dan humor menjadi bahasa seni yang mempersatukan tradisi dengan zaman modern. Sosoknya hadir sebagai jembatan antara kearifan leluhur dan realitas kontemporer, menjadikan Sujiwo Tejo bukan sekadar seniman, tetapi juga penggerak yang terus menghidupkan identitas budaya bangsa.',
-    gender: 'pria',
-    isAi: false,
-    suku: 'Jawa',
-    pitch: -0.05,
-  },
-  {
-    id: 'fb20c08c-7997-4dd0-b77f-ed083b059c10',
-    name: 'Didin S. Damanhuri',
-    role: 'Tradisi Sunda, Islam & adat, kajian kearifan lokal',
-    image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-nyata/didin-s-damanhuri.png',
-    specialties: [
-      'Bahasa Sunda',
-      'Kebudayaan Sunda',
-      'Kuliner Sunda',
-      'Pariwisata Jawa Barat dan Banten',
-      'Sejarah Sunda',
-    ],
-    bio: 'Didin S. Damanhuri berperan penting dalam pelestarian budaya melalui pendekatan ekonomi dan kebudayaan yang berbasis nilai-nilai lokal, terutama dengan menggagas konsep Nusantaranomics. Ia menekankan pentingnya membangun sistem ekonomi yang tidak hanya mengandalkan teori Barat, tetapi juga memadukan kearifan lokal, tradisi, dan budaya etnis sebagai fondasi pembangunan Indonesia yang berkelanjutan. Peran dalam Pelestarian Budaya Didin S. Damanhuri aktif menyuarakan perlunya strategi kebudayaan yang berbasis nilai lokal, agar masyarakat Indonesia tidak hanya menjadi pengikut paradigma Barat, tetapi juga mampu mengembangkan identitas budaya sendiri.​ Ia mengkritik jebakan epistemologi, yaitu ketergantungan pada paradigma luar tanpa adaptasi terhadap kebutuhan dan nilai lokal, serta menyerukan transformasi ilmu pengetahuan yang memprioritaskan kesejahteraan rakyat dan keberlanjutan budaya.​ Melalui gagasan Nusantaranomics, Didin mendorong revitalisasi ekonomi yang berakar pada tradisi, budaya, dan semangat agama, sehingga budaya lokal tidak terpinggirkan dalam proses pembangunan',
-    gender: 'pria',
-    isAi: false,
-    suku: 'Sunda',
-    pitch: -0.05,
   },
   // {
   //   id: 'ac2f5fdb-0a11-4c1b-b486-af2af0ade2f3',
@@ -496,7 +300,7 @@ export const experts: Expert[] = [
     name: 'Panglima Borneo',
     role: 'Pakar Budaya Borneo',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/panglima-borneo.webp',
+      '/assets/pakar-virtual/panglima-borneo.webp',
     specialties: [
       'Adat Dayak',
       'Rumah Panjang',
@@ -524,7 +328,7 @@ export const experts: Expert[] = [
     name: 'Kongco Kesenian',
     role: 'Pakar Budaya Tionghoa',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/kongco-kasenian.webp',
+      '/assets/pakar-virtual/kongco-kasenian.webp',
     specialties: [
       'Adat Tionghoa',
       'Seni Pertunjukan',
@@ -564,7 +368,7 @@ export const experts: Expert[] = [
     name: 'Penyimbang Sai',
     role: 'Pakar Budaya Lampung',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/penyimbang-sai.png',
+      '/assets/pakar-virtual/penyimbang-sai.webp',
     specialties: ['Adat Lampung', 'Siger', 'Tandu', 'Upacara Adat'],
     bio: 'Penyimbang Sai adalah AI yang menjelaskan adat Lampung, simbol siger, prosesi tandu, dan upacara adat. Penekanan pada tata nilai keluarga dan penghormatan leluhur.',
     gender: 'pria',
@@ -577,7 +381,7 @@ export const experts: Expert[] = [
     name: 'Opu Motololo',
     role: 'Pakar Budaya Gorontalo',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/opu-motololo.webp',
+      '/assets/pakar-virtual/opu-motololo.webp',
     specialties: [
       'Adat Gorontalo',
       'Musik Tradisional',
@@ -605,7 +409,7 @@ export const experts: Expert[] = [
     name: "Si Ulu Fa'ulu",
     role: 'Pakar Budaya Nias',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/si-ula-faulu.png',
+      '/assets/pakar-virtual/si-ula-faulu.webp',
     specialties: ['Adat Nias', 'Lompat Batu', 'Ukiran', 'Arsitektur'],
     bio: "Si Ulu Fa'ulu adalah AI yang mengulas adat Nias, tradisi lompat batu, dan seni ukiran—menyoroti ketangguhan komunitas pulau serta ikatan sosialnya.",
     gender: 'pria',
@@ -618,7 +422,7 @@ export const experts: Expert[] = [
     name: 'Lakina Kamali',
     role: 'Pakar Budaya Buton',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/lakina-kamali.webp',
+      '/assets/pakar-virtual/lakina-kamali.webp',
     specialties: ['Adat Buton', 'Kesultanan Buton', 'Upacara Adat'],
     bio: 'Lakina Kamali adalah AI yang menjelaskan sejarah dan adat Kesultanan Buton, prosesi adat, serta nilai kepemimpinan lokal yang menjaga harmoni masyarakat.',
     gender: 'pria',
@@ -631,7 +435,7 @@ export const experts: Expert[] = [
     name: 'Nai Feto',
     role: 'Pakar Budaya Atoni',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/nai-veto.webp',
+      '/assets/pakar-virtual/nai-veto.webp',
     specialties: ['Adat Atoni', 'Tenun', 'Arsitektur Rumah'],
     bio: 'Nai Feto adalah AI yang menuturkan adat Atoni, tradisi tenun, dan arsitektur rumah; menyoroti peran perempuan dalam budaya dan ekonomi rumah tangga.',
     gender: 'wanita',
@@ -654,7 +458,7 @@ export const experts: Expert[] = [
     name: 'Magau Vunja',
     role: 'Pakar Budaya Kaili',
     image:
-      'https://nqkccvvmafrqonxgvxih.supabase.co/storage/v1/object/public/assets/pakar-virtual/magau-vunja.webp',
+      '/assets/pakar-virtual/magau-vunja.webp',
     specialties: ['Adat Kaili', 'Upacara Adat', 'Musik Tradisional'],
     bio: 'Magau Vunja adalah AI yang menjelaskan adat Kaili, prosesi adat, dan musik tradisional dengan penekanan pada kebersamaan dan tata krama lokal.',
     gender: 'pria',
