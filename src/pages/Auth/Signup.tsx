@@ -481,6 +481,11 @@ const Signup: React.FC = () => {
       return;
     }
 
+    if (phone.trim() && !/^\+?[0-9][0-9\s()-]{7,19}$/.test(phone.trim())) {
+      setError('Nomor WhatsApp / telepon tidak valid. Gunakan angka, misalnya 08123456789.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Kata sandi dan konfirmasi kata sandi tidak cocok.');
       return;
@@ -783,7 +788,7 @@ const Signup: React.FC = () => {
           {/* STEP 2: PENGISIAN FORM IDENTITAS UMUM & AKUN */}
           {/* ========================================================================= */}
           {currentStep === 2 && (
-            <form onSubmit={handleProceedFromStep2} className="flex flex-col gap-4">
+            <form onSubmit={handleProceedFromStep2} autoComplete="on" className="flex flex-col gap-4">
               <div className="auth-heading mb-3">
                 <button
                   type="button"
@@ -813,6 +818,8 @@ const Signup: React.FC = () => {
                   <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
+                    name="name"
+                    autoComplete="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nama lengkap sesuai KTP / Identitas Resmi"
@@ -831,6 +838,8 @@ const Signup: React.FC = () => {
                   <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
+                    name="email"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@domain.com"
@@ -852,6 +861,9 @@ const Signup: React.FC = () => {
                   <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="tel"
+                    name="tel"
+                    autoComplete="tel"
+                    inputMode="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="Contoh: 08123456789"
@@ -870,6 +882,8 @@ const Signup: React.FC = () => {
                     <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type={showPassword ? 'text' : 'password'}
+                      name="new-password"
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Minimal 8 karakter"
@@ -895,6 +909,8 @@ const Signup: React.FC = () => {
                     <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirm-password"
+                      autoComplete="new-password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Ulangi kata sandi"
