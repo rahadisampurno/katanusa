@@ -18,10 +18,16 @@ import type { Expert } from '../../types/expert.ts';
 interface TalkEndProps {
   expert: Expert;
   endCall: () => Promise<void>;
+  interruptAi: () => void;
   mediaStreamRef: MutableRefObject<MediaStream | null>;
 }
 
-const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) => {
+const TalkEnd: React.FC<TalkEndProps> = ({
+  expert,
+  endCall,
+  interruptAi,
+  mediaStreamRef,
+}) => {
   const {
     callStatus,
     turnState,
@@ -159,7 +165,7 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
         : isTranscribing
           ? 'Menganalisis intonasi dan kosakata budaya dengan akurasi tinggi.'
           : isAiSpeaking || turnState === 'speaking'
-            ? 'Dengarkan jawaban, atau Anda dapat langsung menyela kapan saja.'
+            ? 'Mikrofon dijeda agar suara AI tidak terbaca sebagai ucapan Anda. Tekan “Giliran Saya” untuk menyela.'
             : isRagSearching || turnState === 'thinking'
               ? 'Mengaitkan pengetahuan adat dan merumuskan jawaban terbaik.'
               : interimTranscript
@@ -278,15 +284,28 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
           </div>
 
           {callStatus !== CallStatusEnum.IDLE && (
-            <button
-              type="button"
-              onClick={() => void endCall()}
-              aria-label="Akhiri panggilan"
-              className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-red-600 px-3 text-sm font-bold text-white shadow-sm transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200 sm:px-4"
-            >
-              <PhoneOff className="h-4 w-4" />
-              <span className="hidden sm:inline">Akhiri</span>
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              {(isAiSpeaking || turnState === 'speaking') && (
+                <button
+                  type="button"
+                  onClick={interruptAi}
+                  aria-label="Hentikan suara AI dan aktifkan mikrofon"
+                  className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#1E315A] px-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#294273] focus:outline-none focus:ring-4 focus:ring-blue-200 sm:px-4"
+                >
+                  <Mic className="h-4 w-4" />
+                  <span className="hidden sm:inline">Giliran Saya</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void endCall()}
+                aria-label="Akhiri panggilan"
+                className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-red-600 px-3 text-sm font-bold text-white shadow-sm transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200 sm:px-4"
+              >
+                <PhoneOff className="h-4 w-4" />
+                <span className="hidden sm:inline">Akhiri</span>
+              </button>
+            </div>
           )}
         </div>
 

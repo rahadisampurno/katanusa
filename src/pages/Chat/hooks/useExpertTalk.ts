@@ -39,6 +39,9 @@ type SpeechRecognitionLike = {
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
+const AI_PLAYBACK_COOLDOWN_MS = 650;
+const MANUAL_INTERRUPT_RESUME_MS = 180;
+
 const waitForBrowserVoices = async (): Promise<SpeechSynthesisVoice[]> => {
   const available = window.speechSynthesis.getVoices();
   if (available.length > 0) return available;
@@ -167,6 +170,7 @@ const useExpertTalk = (
 ): {
   startCall: () => Promise<void | null>;
   endCall: () => Promise<void>;
+  interruptAi: () => void;
   mediaStreamRef: React.MutableRefObject<MediaStream | null>;
 } => {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -179,6 +183,8 @@ const useExpertTalk = (
   const callAttemptRef = useRef(0);
   const pendingTranscriptRef = useRef('');
   const transcriptTimerRef = useRef<number | null>(null);
+  const resumeInputTimerRef = useRef<number | null>(null);
+  const inputSuppressedRef = useRef(false);
   const lastTranscriptRef = useRef<{ text: string; timestamp: number } | null>(null);
 
   const clearPendingTranscript = useCallback((): void => {
@@ -187,6 +193,13 @@ const useExpertTalk = (
       transcriptTimerRef.current = null;
     }
     pendingTranscriptRef.current = '';
+  }, []);
+
+  const clearResumeInputTimer = useCallback((): void => {
+    if (resumeInputTimerRef.current !== null) {
+      window.clearTimeout(resumeInputTimerRef.current);
+      resumeInputTimerRef.current = null;
+    }
   }, []);
 
   const appendTranscript = useCallback((entry: TranscriptEntry): void => {
@@ -216,25 +229,12 @@ const useExpertTalk = (
     }
   }, []);
 
-  /**
-   * Barge-in: menghentikan pembicaraan AI seketika saat pengguna mulai berbicara.
-   */
-  const handleBargeIn = useCallback((): void => {
-    if (turnAbortControllerRef.current) {
-      turnAbortControllerRef.current.abort();
-      turnAbortControllerRef.current = null;
-    }
-    stopAudioPlayback();
-
-    const store = useExpertTalkStore.getState();
-    store.setIsAiSpeaking(false);
-    store.setIsInterrupted(true);
-    store.setTurnState('interrupted');
-    processingRef.current = false;
-  }, [stopAudioPlayback]);
-
   const resumeListening = useCallback((): void => {
-    if (!activeRef.current || !recognitionRef.current) {
+    if (
+      !activeRef.current ||
+      inputSuppressedRef.current ||
+      !recognitionRef.current
+    ) {
       return;
     }
     try {
@@ -244,6 +244,68 @@ const useExpertTalk = (
       // Recognition may already be active.
     }
   }, []);
+
+  /**
+   * Tutup input otomatis selama suara AI diputar. Web Speech API menangkap
+   * mikrofon secara terpisah dari MediaStream sehingga echoCancellation saja
+   * tidak cukup untuk mencegah suara speaker dibaca sebagai ucapan pengguna.
+   */
+  const suppressInputForAiPlayback = useCallback((): void => {
+    clearResumeInputTimer();
+    inputSuppressedRef.current = true;
+    clearPendingTranscript();
+    useExpertTalkStore.getState().setInterimTranscript('');
+    useExpertTalkStore.getState().setIsListening(false);
+    try {
+      recognitionRef.current?.abort();
+    } catch {
+      // Recognition mungkin sudah berhenti.
+    }
+  }, [clearPendingTranscript, clearResumeInputTimer]);
+
+  const scheduleInputResume = useCallback(
+    (delayMs = AI_PLAYBACK_COOLDOWN_MS): void => {
+      clearResumeInputTimer();
+      resumeInputTimerRef.current = window.setTimeout(() => {
+        resumeInputTimerRef.current = null;
+        if (!activeRef.current) return;
+        inputSuppressedRef.current = false;
+        processingRef.current = false;
+        useExpertTalkStore.getState().setTurnState('listening');
+        resumeListening();
+      }, delayMs);
+    },
+    [clearResumeInputTimer, resumeListening],
+  );
+
+  /**
+   * Interupsi eksplisit menjaga fitur barge-in tanpa menebak suara speaker
+   * sebagai ucapan pengguna. Input baru dibuka setelah audio benar-benar diam.
+   */
+  const interruptAi = useCallback((): void => {
+    if (!activeRef.current) return;
+    clearResumeInputTimer();
+    inputSuppressedRef.current = true;
+    clearPendingTranscript();
+    if (turnAbortControllerRef.current) {
+      turnAbortControllerRef.current.abort();
+      turnAbortControllerRef.current = null;
+    }
+    stopAudioPlayback();
+
+    const store = useExpertTalkStore.getState();
+    store.setInterimTranscript('');
+    store.setIsAiSpeaking(false);
+    store.setIsInterrupted(true);
+    store.setTurnState('interrupted');
+    processingRef.current = false;
+    scheduleInputResume(MANUAL_INTERRUPT_RESUME_MS);
+  }, [
+    clearPendingTranscript,
+    clearResumeInputTimer,
+    scheduleInputResume,
+    stopAudioPlayback,
+  ]);
 
   const speak = useCallback(
     async (
@@ -392,10 +454,7 @@ const useExpertTalk = (
       },
       onFinish: () => {
         if (turnAbortController.signal.aborted) return;
-        const currentStore = useExpertTalkStore.getState();
-        currentStore.setTurnState('listening');
-        processingRef.current = false;
-        resumeListening();
+        scheduleInputResume();
       },
       onError: (err) => {
         console.warn('[AudioQueuePlayer] Error:', err);
@@ -432,6 +491,9 @@ const useExpertTalk = (
           },
           onAudioChunk: (chunk) => {
             streamSucceeded = true;
+            if (!audioQueuePlayerRef.current?.isSpeaking) {
+              suppressInputForAiPlayback();
+            }
             player.addChunk(chunk);
           },
           onDone: () => {
@@ -487,6 +549,7 @@ const useExpertTalk = (
           ? { audio: response.audio, mimeType: response.mimeType || 'audio/wav' }
           : null;
 
+        suppressInputForAiPlayback();
         await speak(response.text, preloadedAudio, onVoiceStart);
 
         if (!aiMessageAppended) {
@@ -504,19 +567,25 @@ const useExpertTalk = (
           text: 'Maaf, layanan percakapan sedang mengalami kendala jaringan.',
         });
       } finally {
-        const latestStore = useExpertTalkStore.getState();
-        latestStore.setTurnState('listening');
-        processingRef.current = false;
-        resumeListening();
+        scheduleInputResume();
       }
     }
-  }, [appendTranscript, expert, resumeListening, speak, stopAudioPlayback]);
+  }, [
+    appendTranscript,
+    expert,
+    scheduleInputResume,
+    speak,
+    stopAudioPlayback,
+    suppressInputForAiPlayback,
+  ]);
 
   const endCall = useCallback(async (): Promise<void> => {
     callAttemptRef.current += 1;
     activeRef.current = false;
+    inputSuppressedRef.current = false;
     processingRef.current = false;
     clearPendingTranscript();
+    clearResumeInputTimer();
     lastTranscriptRef.current = null;
     if (turnAbortControllerRef.current) {
       turnAbortControllerRef.current.abort();
@@ -548,7 +617,12 @@ const useExpertTalk = (
     talkStore.setIsAiSpeaking(false);
     talkStore.setInterimTranscript('');
     talkStore.resetRagSearching();
-  }, [clearPendingTranscript, releaseMicrophone, stopAudioPlayback]);
+  }, [
+    clearPendingTranscript,
+    clearResumeInputTimer,
+    releaseMicrophone,
+    stopAudioPlayback,
+  ]);
 
   /**
    * Loop VAD dan transkripsi server (Fallback STT) untuk browser tanpa SpeechRecognition bawaan (misal Safari/Firefox/iOS).
@@ -602,6 +676,20 @@ const useExpertTalk = (
         return;
       }
 
+      if (inputSuppressedRef.current) {
+        silenceStart = null;
+        if (isRecording) {
+          isRecording = false;
+          chunks = [];
+          if (recorder && recorder.state !== 'inactive') {
+            recorder.ondataavailable = null;
+            recorder.onstop = null;
+            recorder.stop();
+          }
+        }
+        return;
+      }
+
       analyser.getByteFrequencyData(samples);
       const average = samples.reduce((s, v) => s + v, 0) / samples.length;
       const level = Math.min(1, Math.max(0, (average - 4) / 42));
@@ -611,14 +699,6 @@ const useExpertTalk = (
 
       if (isSpeaking) {
         silenceStart = null;
-        const currentStore = useExpertTalkStore.getState();
-        const isAiTalking =
-          currentStore.isAiSpeaking ||
-          (audioQueuePlayerRef.current?.isSpeaking ?? false);
-
-        if (isAiTalking) {
-          handleBargeIn();
-        }
 
         if (!isRecording && !processingRef.current) {
           isRecording = true;
@@ -632,7 +712,12 @@ const useExpertTalk = (
               if (e.data && e.data.size > 0) chunks.push(e.data);
             };
             recorder.onstop = async () => {
-              if (chunks.length === 0 || !expert || !activeRef.current) return;
+              if (
+                chunks.length === 0 ||
+                !expert ||
+                !activeRef.current ||
+                inputSuppressedRef.current
+              ) return;
               const fullBlob = new Blob(chunks, {
                 type: recorder?.mimeType || 'audio/webm',
               });
@@ -670,7 +755,7 @@ const useExpertTalk = (
         }
       }
     }, 70);
-  }, [expert, handleBargeIn, processTranscript]);
+  }, [expert, processTranscript]);
 
   const startCall = useCallback(async (): Promise<void | null> => {
     if (
@@ -715,6 +800,8 @@ const useExpertTalk = (
     talkStore.setCallStatus(CallStatusEnum.CONNECTING);
     talkStore.setLiveTranscript([]);
     talkStore.setInterimTranscript('');
+    clearResumeInputTimer();
+    inputSuppressedRef.current = false;
     const callAttempt = callAttemptRef.current + 1;
     callAttemptRef.current = callAttempt;
 
@@ -776,6 +863,12 @@ const useExpertTalk = (
       recognition.lang = preferredLanguage;
 
       recognition.onresult = (event): void => {
+        if (inputSuppressedRef.current) {
+          clearPendingTranscript();
+          useExpertTalkStore.getState().setInterimTranscript('');
+          return;
+        }
+
         let finalTranscript = '';
         let interimTranscript = '';
         for (
@@ -790,17 +883,7 @@ const useExpertTalk = (
           }
         }
 
-        const activeSpeech = (interimTranscript || finalTranscript).trim();
         const currentStore = useExpertTalkStore.getState();
-
-        // BARGE-IN: Jika AI sedang berbicara dan pengguna bersuara, hentikan suara AI seketika
-        const isAiCurrentlySpeaking =
-          currentStore.isAiSpeaking ||
-          (audioQueuePlayerRef.current?.isSpeaking ?? false);
-
-        if (isAiCurrentlySpeaking && activeSpeech.length > 0) {
-          handleBargeIn();
-        }
 
         currentStore.setInterimTranscript(interimTranscript.trim());
 
@@ -880,7 +963,7 @@ const useExpertTalk = (
 
       recognition.onend = (): void => {
         // Jaga agar recognition terus hidup selama panggilan aktif
-        if (activeRef.current) {
+        if (activeRef.current && !inputSuppressedRef.current) {
           try {
             recognition.start();
           } catch {
@@ -899,9 +982,10 @@ const useExpertTalk = (
 
     return undefined;
   }, [
+    clearPendingTranscript,
+    clearResumeInputTimer,
     endCall,
     expert,
-    handleBargeIn,
     processTranscript,
     releaseMicrophone,
     resumeListening,
@@ -911,8 +995,10 @@ const useExpertTalk = (
   useEffect(() => () => {
     callAttemptRef.current += 1;
     activeRef.current = false;
+    inputSuppressedRef.current = false;
     processingRef.current = false;
     clearPendingTranscript();
+    clearResumeInputTimer();
     if (turnAbortControllerRef.current) {
       turnAbortControllerRef.current.abort();
       turnAbortControllerRef.current = null;
@@ -921,9 +1007,14 @@ const useExpertTalk = (
     recognitionRef.current = null;
     stopAudioPlayback();
     releaseMicrophone();
-  }, [clearPendingTranscript, releaseMicrophone, stopAudioPlayback]);
+  }, [
+    clearPendingTranscript,
+    clearResumeInputTimer,
+    releaseMicrophone,
+    stopAudioPlayback,
+  ]);
 
-  return { startCall, endCall, mediaStreamRef };
+  return { startCall, endCall, interruptAi, mediaStreamRef };
 };
 
 export default useExpertTalk;

@@ -75,7 +75,7 @@ const ChatWindow: React.FC = () => {
     liveTranscript,
     errorMessage: callError,
   } = useExpertTalkStore();
-  const { startCall, endCall, mediaStreamRef } = useExpertTalk(expert);
+  const { startCall, endCall, interruptAi, mediaStreamRef } = useExpertTalk(expert);
   const { sendMessage } = useChatActions(expert);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -382,6 +382,7 @@ const ChatWindow: React.FC = () => {
         <TalkEnd
           expert={expert}
           endCall={endCall}
+          interruptAi={interruptAi}
           mediaStreamRef={mediaStreamRef}
         />
       )}
