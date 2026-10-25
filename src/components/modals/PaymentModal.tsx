@@ -92,7 +92,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             );
           },
           onPending: (): void => {
-            void navigate('/booking-history');
+            void navigate('/dashboard/konsultasi');
           },
         });
       } else {

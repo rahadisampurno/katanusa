@@ -10,24 +10,32 @@ export const CallStatusEnum = {
 export type CallStatusEnum =
   (typeof CallStatusEnum)[keyof typeof CallStatusEnum];
 
+export type TurnState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'interrupted';
+
 type UseExpertTalkStore = {
   callStatus: CallStatusEnum;
+  turnState: TurnState;
   liveTranscript: TranscriptEntry[];
   isVideoEnabled: boolean;
   isScreenSharing: boolean;
   isListening: boolean;
   isAiSpeaking: boolean;
   isRagSearching: boolean;
+  isInterrupted: boolean;
+  isTranscribing: boolean;
   interimTranscript: string;
   ragSearchingCount: number;
   errorMessage: string | null;
   setIsScreenSharing: (isScreenSharing: boolean) => void;
   setIsVideoEnabled: (isVideoEnabled: boolean) => void;
   setCallStatus: (callStatus: CallStatusEnum) => void;
+  setTurnState: (turnState: TurnState) => void;
   setLiveTranscript: (liveTranscript: TranscriptEntry[]) => void;
   setIsListening: (isListening: boolean) => void;
   setIsAiSpeaking: (isAiSpeaking: boolean) => void;
   setIsRagSearching: (active: boolean) => void;
+  setIsInterrupted: (isInterrupted: boolean) => void;
+  setIsTranscribing: (isTranscribing: boolean) => void;
   setInterimTranscript: (interimTranscript: string) => void;
   resetRagSearching: () => void;
   setErrorMessage: (errorMessage: string | null) => void;
@@ -35,12 +43,15 @@ type UseExpertTalkStore = {
 
 const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
   callStatus: CallStatusEnum.IDLE,
+  turnState: 'idle',
   liveTranscript: [],
   isVideoEnabled: false,
   isScreenSharing: false,
   isListening: false,
   isAiSpeaking: false,
   isRagSearching: false,
+  isInterrupted: false,
+  isTranscribing: false,
   interimTranscript: '',
   ragSearchingCount: 0,
   errorMessage: null,
@@ -60,6 +71,17 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
     set((state) => ({
       ...state,
       callStatus,
+      ...(callStatus === CallStatusEnum.IDLE ? { turnState: 'idle' } : {}),
+    }));
+  },
+  setTurnState(turnState: TurnState): void {
+    set((state) => ({
+      ...state,
+      turnState,
+      isListening: turnState === 'listening',
+      isAiSpeaking: turnState === 'speaking',
+      isRagSearching: turnState === 'thinking',
+      isInterrupted: turnState === 'interrupted',
     }));
   },
   setLiveTranscript(liveTranscript: TranscriptEntry[]): void {
@@ -72,12 +94,14 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
     set((state) => ({
       ...state,
       isListening,
+      turnState: isListening ? 'listening' : state.turnState,
     }));
   },
   setIsAiSpeaking(isAiSpeaking: boolean): void {
     set((state) => ({
       ...state,
       isAiSpeaking,
+      turnState: isAiSpeaking ? 'speaking' : state.turnState,
     }));
   },
   setIsRagSearching(active: boolean): void {
@@ -89,8 +113,19 @@ const useExpertTalkStore = create<UseExpertTalkStore>()((set) => ({
         ...state,
         ragSearchingCount: nextCount,
         isRagSearching: nextCount > 0,
+        turnState: nextCount > 0 && !state.isAiSpeaking ? 'thinking' : state.turnState,
       };
     });
+  },
+  setIsInterrupted(isInterrupted: boolean): void {
+    set((state) => ({
+      ...state,
+      isInterrupted,
+      turnState: isInterrupted ? 'interrupted' : state.turnState,
+    }));
+  },
+  setIsTranscribing(isTranscribing: boolean): void {
+    set((state) => ({ ...state, isTranscribing }));
   },
   setInterimTranscript(interimTranscript: string): void {
     set((state) => ({ ...state, interimTranscript }));

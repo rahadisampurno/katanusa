@@ -3,7 +3,9 @@ import {
   Loader2,
   Mic,
   PhoneOff,
+  RefreshCw,
   Sparkles,
+  Volume2,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { MutableRefObject } from 'react';
@@ -22,11 +24,16 @@ interface TalkEndProps {
 const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) => {
   const {
     callStatus,
+    turnState,
     isListening,
     isAiSpeaking,
     isRagSearching,
+    isInterrupted,
+    isTranscribing,
     interimTranscript,
     errorMessage,
+    setErrorMessage,
+    setTurnState,
   } = useExpertTalkStore();
   const [microphoneLevel, setMicrophoneLevel] = useState(0);
   const [audioHint, setAudioHint] = useState<string | null>(null);
@@ -44,8 +51,9 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
       return undefined;
     }
 
-    const AudioContextClass = window.AudioContext
-      || (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
         .webkitAudioContext;
     if (!AudioContextClass) return undefined;
 
@@ -67,8 +75,8 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
     const measure = (timestamp: number): void => {
       analyser.getByteFrequencyData(samples);
       if (timestamp - lastUpdate > 70) {
-        const average = samples.reduce((sum, value) => sum + value, 0)
-          / samples.length;
+        const average =
+          samples.reduce((sum, value) => sum + value, 0) / samples.length;
         const normalizedLevel = Math.min(1, Math.max(0, (average - 4) / 42));
         setMicrophoneLevel(normalizedLevel);
 
@@ -82,19 +90,23 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
         } else if (normalizedLevel < 0.025) {
           quietStartedAt ??= timestamp;
           noisyStartedAt = null;
-          if (timestamp - quietStartedAt > 3000 && currentHint !== 'quiet') {
+          if (timestamp - quietStartedAt > 3500 && currentHint !== 'quiet') {
             currentHint = 'quiet';
-            setAudioHint('Suara masih sangat pelan. Dekatkan mikrofon atau tingkatkan volume input.');
+            setAudioHint(
+              'Suara masih sangat pelan. Dekatkan mikrofon atau tingkatkan volume input.',
+            );
           }
         } else if (
-          normalizedLevel > 0.6
-          && interimTranscriptRef.current.length === 0
+          normalizedLevel > 0.6 &&
+          interimTranscriptRef.current.length === 0
         ) {
           noisyStartedAt ??= timestamp;
           quietStartedAt = null;
-          if (timestamp - noisyStartedAt > 2200 && currentHint !== 'noisy') {
+          if (timestamp - noisyStartedAt > 2500 && currentHint !== 'noisy') {
             currentHint = 'noisy';
-            setAudioHint('Suara latar cukup kuat. Berpindahlah ke tempat yang lebih tenang.');
+            setAudioHint(
+              'Suara latar cukup kuat. Berpindahlah ke tempat yang lebih tenang.',
+            );
           }
         } else {
           quietStartedAt = null;
@@ -119,42 +131,62 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
     };
   }, [callStatus, isListening, mediaStreamRef]);
 
-  const isVoiceDetected = isListening
-    && (microphoneLevel > 0.08 || interimTranscript.length > 0);
+  const isVoiceDetected =
+    isListening && (microphoneLevel > 0.08 || interimTranscript.length > 0);
 
-  const statusText = callStatus === CallStatusEnum.CONNECTING
-    ? 'Meminta akses mikrofon...'
-    : isAiSpeaking
-      ? 'AI persona sedang berbicara'
-      : isRagSearching
-        ? 'Mencari rujukan pengetahuan...'
-        : isVoiceDetected
-          ? 'Suara Anda terdeteksi'
-          : isListening
-            ? 'Mendengarkan suara Anda...'
-          : 'Panggilan aktif';
+  const statusText =
+    callStatus === CallStatusEnum.CONNECTING
+      ? 'Meminta akses mikrofon...'
+      : isInterrupted
+        ? 'Percakapan disela'
+        : isTranscribing
+          ? 'Memproses ucapan suara...'
+          : isAiSpeaking || turnState === 'speaking'
+            ? `${expert.name} sedang berbicara`
+            : isRagSearching || turnState === 'thinking'
+              ? `${expert.name} sedang menyiapkan jawaban...`
+              : isVoiceDetected
+                ? 'Suara Anda terdeteksi'
+                : isListening
+                  ? 'Mendengarkan suara Anda...'
+                  : 'Panggilan aktif';
 
-  const statusDescription = callStatus === CallStatusEnum.CONNECTING
-    ? 'Izinkan akses mikrofon untuk memulai percakapan.'
-    : isAiSpeaking
-      ? 'Dengarkan jawaban sebelum berbicara kembali.'
-      : isRagSearching
-        ? 'Persona sedang menyiapkan jawaban terbaik.'
-        : interimTranscript
-          ? `“${interimTranscript}”`
-          : audioHint
-            ? audioHint
-          : isListening
-            ? 'Silakan berbicara, lalu beri jeda untuk mengirim.'
-          : 'Percakapan suara sedang berlangsung.';
+  const statusDescription =
+    callStatus === CallStatusEnum.CONNECTING
+      ? 'Izinkan akses mikrofon untuk memulai percakapan.'
+      : isInterrupted
+        ? 'AI langsung berhenti bicara, silakan lanjutkan pertanyaan baru Anda.'
+        : isTranscribing
+          ? 'Menganalisis intonasi dan kosakata budaya dengan akurasi tinggi.'
+          : isAiSpeaking || turnState === 'speaking'
+            ? 'Dengarkan jawaban, atau Anda dapat langsung menyela kapan saja.'
+            : isRagSearching || turnState === 'thinking'
+              ? 'Mengaitkan pengetahuan adat dan merumuskan jawaban terbaik.'
+              : interimTranscript
+                ? `“${interimTranscript}”`
+                : audioHint
+                  ? audioHint
+                  : isListening
+                    ? `Bicaralah secara santai dengan ${expert.name}. Beri jeda sejenak untuk mengirim.`
+                    : 'Percakapan suara sedang berlangsung.';
 
-  const StatusIcon = callStatus === CallStatusEnum.CONNECTING
-    ? Loader2
-    : isAiSpeaking
-      ? AudioLines
-      : isRagSearching
+  const StatusIcon =
+    callStatus === CallStatusEnum.CONNECTING
+      ? Loader2
+      : isTranscribing
         ? Sparkles
-        : Mic;
+        : isAiSpeaking || turnState === 'speaking'
+          ? AudioLines
+          : isRagSearching || turnState === 'thinking'
+            ? Sparkles
+            : isInterrupted
+              ? Volume2
+              : Mic;
+
+  const handleRetry = (): void => {
+    setErrorMessage(null);
+    setTurnState('listening');
+  };
 
   return (
     <div className="border-t border-[#1E315A]/10 bg-gradient-to-t from-[#F8F2E7] via-[#F8F2E7] to-[#F8F2E7]/70 px-4 pb-4 pt-2 sm:px-6">
@@ -167,6 +199,7 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
                 isAiSpeaking && 'animate-pulse bg-amber-400',
                 isListening && !isAiSpeaking && 'animate-pulse bg-emerald-400',
                 isRagSearching && !isAiSpeaking && 'animate-pulse bg-amber-300',
+                isInterrupted && 'animate-ping bg-blue-400',
               )}
             />
             <img
@@ -189,10 +222,17 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
               <StatusIcon
                 className={cn(
                   'h-4 w-4 shrink-0',
-                  callStatus === CallStatusEnum.CONNECTING && 'animate-spin text-amber-600',
-                  isAiSpeaking && 'text-amber-600',
-                  isRagSearching && !isAiSpeaking && 'text-amber-600',
-                  isListening && !isAiSpeaking && !isRagSearching && 'text-emerald-600',
+                  (callStatus === CallStatusEnum.CONNECTING || isTranscribing) &&
+                    'animate-spin text-amber-600',
+                  (isAiSpeaking || turnState === 'speaking') && 'text-amber-600',
+                  (isRagSearching || turnState === 'thinking') &&
+                    'animate-pulse text-amber-600',
+                  isInterrupted && 'text-blue-600',
+                  isListening &&
+                    !isAiSpeaking &&
+                    !isRagSearching &&
+                    !isTranscribing &&
+                    'text-emerald-600',
                 )}
               />
               <p className="truncate text-sm font-bold text-[#1E315A]">
@@ -212,23 +252,27 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
               const activeLevel = isListening
                 ? Math.max(0.12, microphoneLevel)
                 : isAiSpeaking
-                  ? 0.65
-                  : 0.12;
-              const height = 7 + (activeLevel * 25 * scale);
+                  ? 0.7
+                  : isRagSearching
+                    ? 0.25
+                    : 0.12;
+              const height = 7 + activeLevel * 25 * scale;
 
               return (
-              <span
-                key={scale}
-                className={cn(
-                  'w-1 rounded-full bg-[#1E315A]/20 transition-all',
-                  isVoiceDetected && 'bg-emerald-500/80',
-                  isAiSpeaking && 'animate-pulse bg-amber-500/70',
-                )}
-                style={{
-                  height: `${height}px`,
-                  animationDelay: `${index * 120}ms`,
-                }}
-              />
+                <span
+                  key={scale}
+                  className={cn(
+                    'w-1 rounded-full bg-[#1E315A]/20 transition-all',
+                    isVoiceDetected && 'bg-emerald-500/80',
+                    isAiSpeaking && 'animate-pulse bg-amber-500/70',
+                    isRagSearching && 'animate-pulse bg-amber-300/60',
+                    isInterrupted && 'bg-blue-500/80',
+                  )}
+                  style={{
+                    height: `${height}px`,
+                    animationDelay: `${index * 120}ms`,
+                  }}
+                />
               );
             })}
           </div>
@@ -247,12 +291,19 @@ const TalkEnd: React.FC<TalkEndProps> = ({ expert, endCall, mediaStreamRef }) =>
         </div>
 
         {errorMessage && (
-          <p
-            className="mt-3 border-t border-red-100 pt-2 text-xs text-red-600"
-            role="alert"
-          >
-            {errorMessage}
-          </p>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-red-100 pt-2 text-xs text-red-600">
+            <p role="alert" className="truncate">
+              {errorMessage}
+            </p>
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="inline-flex shrink-0 items-center gap-1 rounded bg-red-100 px-2 py-1 font-medium text-red-700 hover:bg-red-200"
+            >
+              <RefreshCw className="h-3 w-3" />
+              <span>Coba Lagi</span>
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -16,45 +16,63 @@ const AuthenticatedButton: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    window.addEventListener('click', () => {});
-  }, [buttonRef]);
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   return (
-    <div
-      ref={buttonRef}
-      role="button"
-      className="relative border text-white text-sm rounded-2xl flex justify-center items-center gap-5 px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-500/70 transition-colors"
-      onClick={() => setShowDropdown(!showDropdown)}
-    >
-      <div className="flex items-center gap-2">
-        <User className="w-4 h-4" />
-        <span>{auth.getUserData()?.user_metadata?.name}</span>
-      </div>
-      <div className="flex items-center gap-2 text-amber-500 font-bold" title="Kearifan Token">
-        <span className="inline-block">{aiToken}</span>
-        <SuryaMajapahitIcon className="w-4 h-4" />
-      </div>
+    <div ref={buttonRef} className="relative text-sm">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={showDropdown}
+        className="flex cursor-pointer items-center justify-center gap-5 rounded-2xl border bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-500/70"
+        onClick={() => setShowDropdown((current) => !current)}
+      >
+        <span className="flex items-center gap-2">
+          <User className="h-4 w-4" aria-hidden="true" />
+          <span>{auth.getUserData()?.user_metadata?.name ?? auth.getUserData()?.name}</span>
+        </span>
+        <span className="flex items-center gap-2 font-bold text-amber-500" title="Kearifan Token">
+          <span>{aiToken}</span>
+          <SuryaMajapahitIcon className="h-4 w-4" />
+        </span>
+      </button>
       {showDropdown && (
-        <div className="absolute right-0 translate-y-3 rounded-2xl top-full w-full bg-white shadow-lg z-50">
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-50 mt-3 min-w-48 overflow-hidden rounded-2xl bg-white shadow-lg"
+        >
           <div className="flex flex-col">
             <Link
-              to="/booking-history"
+              to="/dashboard"
+              role="menuitem"
+              onClick={() => setShowDropdown(false)}
               className="hover:bg-gray-50 text-gray-700 transition p-4 rounded-t-2xl"
+            >
+              Dashboard Saya
+            </Link>
+            <Link
+              to="/dashboard/konsultasi"
+              role="menuitem"
+              onClick={() => setShowDropdown(false)}
+              className="p-4 text-gray-700 transition hover:bg-gray-50"
             >
               Booking Saya
             </Link>
-            {['pakar', 'admin'].includes(auth.getUserData()?.role ?? '') ? (
-              <Link
-                to="/dashboard"
-                className="hover:bg-gray-50 text-gray-700 transition p-4"
-              >
-                Dashboard
-              </Link>
-            ) : null}
             <div className="border-t border-gray-700/10"></div>
             <button
-              onClick={() => {
-                auth.logout();
+              type="button"
+              role="menuitem"
+              onClick={async () => {
+                setShowDropdown(false);
+                await auth.logout();
                 revalidate();
                 navigate('/auth/login');
               }}

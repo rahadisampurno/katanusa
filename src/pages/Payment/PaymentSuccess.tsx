@@ -83,7 +83,7 @@ const PaymentSuccess: React.FC = () => {
               <Button
                 className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-red-600/20 transition-all"
                 onClick={() => {
-                  navigate('/booking-history');
+                  navigate('/dashboard/konsultasi');
                 }}
               >
                 Lihat Agenda Bimbingan Budaya

@@ -13,6 +13,8 @@ export type AiResponse = {
   }[];
   mode?: 'deepseek' | 'local';
   conversationId: string;
+  audio?: string;
+  mimeType?: string;
 };
 
 const getAiResponse = async ({

@@ -582,7 +582,7 @@ export const ApplyExpertPage: React.FC = () => {
               <Button variant="primary" onClick={() => navigate('/dashboard/application')}>
                 Buka Timeline &amp; Status Pengajuan
               </Button>
-              <Button variant="outline" onClick={() => navigate('/booking-history')}>
+              <Button variant="outline" onClick={() => navigate('/dashboard/konsultasi')}>
                 Riwayat Sesi
               </Button>
             </div>

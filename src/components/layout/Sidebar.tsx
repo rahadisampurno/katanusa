@@ -214,10 +214,11 @@ const Sidebar: React.FC<PropsWithChildren<SidebarProps>> = ({
             type="button"
             onClick={() => setIsCollapsed((value) => !value)}
             aria-label={isCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+            title={isCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
             className="kn-sidebar__collapse"
           >
             <ChevronLeft
-              className={cn('h-4 w-4', isCollapsed && 'rotate-180')}
+              className={cn('h-4 w-4 transition-transform duration-200', isCollapsed && 'rotate-180')}
             />
           </button>
 

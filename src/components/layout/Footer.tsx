@@ -66,7 +66,7 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/booking-history" className="hover:text-white transition-colors">
+                <Link to="/dashboard/konsultasi" className="hover:text-white transition-colors">
                   Jadwal Sesi Konsultasi
                 </Link>
               </li>

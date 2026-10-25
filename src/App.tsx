@@ -12,13 +12,13 @@ import verifyLoader from './pages/Auth/loader/Verify.loader';
 import expertChatPageLoader from './pages/Chat/ExpertChatPage.loader';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 import LandingPage from './pages/Home/LandingPage';
+import RouteErrorPage from './components/errors/RouteErrorPage';
 
 const Login = lazy(() => import('./pages/Auth/Login'));
 const Signup = lazy(() => import('./pages/Auth/Signup'));
 const Verify = lazy(() => import('./pages/Auth/Verify'));
 const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/Auth/ResetPassword'));
-const BookingHistory = lazy(() => import('./pages/Booking/BookingHistory'));
 const ExpertChatPage = lazy(() => import('./pages/Chat/ExpertChatPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const Transaction = lazy(() => import('./pages/Dashboard/Transaction'));
@@ -61,6 +61,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingPage />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/signup',
@@ -73,11 +74,13 @@ const router = createBrowserRouter([
   {
     path: '/booking-history',
     loader: protectedLoader,
-    element: <BookingHistory />,
+    element: <Navigate to="/dashboard/konsultasi" replace />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/auth',
     loader: publicLoader,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: '/auth/login',
@@ -105,6 +108,7 @@ const router = createBrowserRouter([
 
   {
     path: '/payment',
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: '/payment/success',
@@ -117,14 +121,17 @@ const router = createBrowserRouter([
   {
     path: '/about',
     element: <About />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/expert/apply',
     loader: protectedLoader,
     element: <ApplyExpertPage />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/experts',
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: '/experts',
@@ -148,6 +155,7 @@ const router = createBrowserRouter([
   {
     path: '/dashboard',
     loader: protectedLoader,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: '/dashboard',
@@ -245,6 +253,7 @@ const router = createBrowserRouter([
   {
     path: '/reviewer',
     loader: reviewerLoader,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: '/reviewer/applications',
@@ -267,6 +276,7 @@ const router = createBrowserRouter([
   {
     path: '/admin',
     loader: adminLoader,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: '/admin',
@@ -297,6 +307,10 @@ const router = createBrowserRouter([
         element: <AdminAudit />,
       },
     ],
+  },
+  {
+    path: '*',
+    element: <RouteErrorPage notFound />,
   },
 ]);
 
