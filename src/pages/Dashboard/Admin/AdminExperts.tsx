@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import {
   AlertCircle,
@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import Sidebar from '../../../components/layout/Sidebar';
+import { getApiErrorMessage } from '../../../libs/apiError';
 import network from '../../../libs/network';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
@@ -34,7 +35,7 @@ interface ExpertProfileItem {
   title: string | null;
   community: string | null;
   region: string | null;
-  domains: any;
+  domains: string[] | string | null;
   status: string;
   is_published: boolean;
   hourly_rate: number;
@@ -55,6 +56,7 @@ export const AdminExperts: React.FC = () => {
 
   // Filters & Pagination
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -69,12 +71,12 @@ export const AdminExperts: React.FC = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
-  const fetchExperts = async () => {
+  const fetchExperts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (search.trim()) params.append('search', search.trim());
+      if (appliedSearch) params.append('search', appliedSearch);
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       params.append('page', String(page));
       params.append('limit', String(limit));
@@ -87,21 +89,21 @@ export const AdminExperts: React.FC = () => {
       setExperts(res.data.items || []);
       setTotalPages(res.data.pagination.total_pages || 1);
       setTotalItems(res.data.pagination.total_items || 0);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Gagal memuat direktori pakar.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Gagal memuat direktori pakar.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [appliedSearch, page, statusFilter]);
 
   useEffect(() => {
-    fetchExperts();
-  }, [page, statusFilter]);
+    void fetchExperts();
+  }, [fetchExperts]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setAppliedSearch(search.trim());
     setPage(1);
-    fetchExperts();
   };
 
   const openActionModal = (
@@ -139,8 +141,10 @@ export const AdminExperts: React.FC = () => {
       setActionType(null);
       fetchExperts();
       setTimeout(() => setActionNotice(null), 5000);
-    } catch (err: any) {
-      setActionError(err?.response?.data?.message || 'Gagal mengeksekusi tindakan operasional.');
+    } catch (err: unknown) {
+      setActionError(
+        getApiErrorMessage(err, 'Gagal mengeksekusi tindakan operasional.'),
+      );
     } finally {
       setActionLoading(false);
     }

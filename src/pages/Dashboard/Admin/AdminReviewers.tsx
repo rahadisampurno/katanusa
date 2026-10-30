@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import Sidebar from '../../../components/layout/Sidebar';
+import { getApiErrorMessage } from '../../../libs/apiError';
 import network from '../../../libs/network';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
@@ -57,8 +58,8 @@ export const AdminReviewers: React.FC = () => {
     try {
       const res = await network.get<{ reviewers: ReviewerItem[] }>('/admin/reviewers');
       setReviewers(res.data.reviewers || []);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Gagal memuat staf reviewer.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Gagal memuat staf reviewer.'));
     } finally {
       setLoading(false);
     }
@@ -98,8 +99,8 @@ export const AdminReviewers: React.FC = () => {
       setSelectedReviewer(null);
       fetchReviewers();
       setTimeout(() => setActionNotice(null), 5000);
-    } catch (err: any) {
-      setModalError(err?.response?.data?.message || 'Gagal mengubah kapabilitas.');
+    } catch (err: unknown) {
+      setModalError(getApiErrorMessage(err, 'Gagal mengubah kapabilitas.'));
     } finally {
       setSubmitting(false);
     }

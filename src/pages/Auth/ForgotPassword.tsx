@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import AuthShell from '../../components/auth/AuthShell';
 import Button from '../../components/ui/Button';
+import { getApiErrorMessage } from '../../libs/apiError';
 import network from '../../libs/network';
 
 const ForgotPassword: React.FC = () => {
@@ -20,13 +21,14 @@ const ForgotPassword: React.FC = () => {
       setIsLoading(false);
       setIsSuccess(true);
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       setIsLoading(false);
-      const msg =
-        err?.response?.data?.error?.message ||
-        err?.response?.data?.message ||
-        'Gagal memproses permintaan pemulihan kata sandi.';
-      setError(msg);
+      setError(
+        getApiErrorMessage(
+          err,
+          'Gagal memproses permintaan pemulihan kata sandi.',
+        ),
+      );
     },
   });
 

@@ -1,8 +1,9 @@
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLoaderData, useNavigate, useParams, useSearchParams } from 'react-router';
 import { v1 } from 'uuid';
 import network from '../../libs/network.ts';
+import { groupAdjacentTranscripts } from '../../libs/transcriptGrouping.ts';
 import { resolveExpertPersona } from '../../data/resolveExpertPersona.ts';
 import useChatActions from '../../pages/Chat/hooks/useChatActions';
 import useExpertChatStore from '../../pages/Chat/hooks/useExpertChatStore.ts';
@@ -29,6 +30,7 @@ const ChatWindow: React.FC = () => {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyLoadError, setHistoryLoadError] = useState<string | null>(null);
   const [errorNotFound, setErrorNotFound] = useState(false);
+  const [showCallPrompt, setShowCallPrompt] = useState(false);
   const autoCallTriggered = useRef(false);
 
   // Sync loader data or fetch by URL param if loader returned undefined
@@ -77,6 +79,10 @@ const ChatWindow: React.FC = () => {
   } = useExpertTalkStore();
   const { startCall, endCall, interruptAi, mediaStreamRef } = useExpertTalk(expert);
   const { sendMessage } = useChatActions(expert);
+  const groupedLiveTranscript = useMemo(
+    () => groupAdjacentTranscripts(liveTranscript),
+    [liveTranscript],
+  );
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [activeVoiceMessageId, setActiveVoiceMessageId] = useState<string | null>(null);
@@ -149,7 +155,8 @@ const ChatWindow: React.FC = () => {
     };
   }, [stopChatVoice]);
 
-  // Auto trigger voice call if user arrived via "Mulai Call" (?call=true)
+  // Chrome remembers microphone permission per origin. If it is already granted,
+  // continue automatically; only show the permission action on the first use.
   useEffect(() => {
     const shouldCall =
       searchParams.get('call') === 'true' || searchParams.get('call') === '1';
@@ -160,7 +167,21 @@ const ChatWindow: React.FC = () => {
       callStatus === CallStatusEnum.IDLE
     ) {
       autoCallTriggered.current = true;
-      void startCall();
+      const continueCall = async (): Promise<void> => {
+        try {
+          const permission = await navigator.permissions.query({
+            name: 'microphone' as PermissionName,
+          });
+          if (permission.state === 'granted') {
+            await startCall({ allowWithoutGesture: true });
+            return;
+          }
+        } catch {
+          // Safari lama belum menyediakan Permissions API untuk mikrofon.
+        }
+        setShowCallPrompt(true);
+      };
+      void continueCall();
     }
   }, [expert, searchParams, callStatus, startCall]);
 
@@ -302,6 +323,44 @@ const ChatWindow: React.FC = () => {
         }}
       />
 
+      {showCallPrompt && callStatus === CallStatusEnum.IDLE && (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-3">
+          <div
+            className="mx-auto flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            role="dialog"
+            aria-label="Konfirmasi panggilan suara"
+          >
+            <div>
+              <p className="text-sm font-bold text-[#1E315A]">
+                Siap memulai panggilan suara dengan {expert.name}?
+              </p>
+              <p className="mt-0.5 text-xs text-slate-600">
+                Browser akan meminta izin mikrofon. Suara hanya dipakai selama panggilan aktif.
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCallPrompt(false)}
+                className="rounded-full border border-[#1E315A]/20 bg-white px-4 py-2 text-sm font-semibold text-[#1E315A] hover:bg-slate-50"
+              >
+                Nanti saja
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCallPrompt(false);
+                  void startCall();
+                }}
+                className="rounded-full bg-[#1E315A] px-4 py-2 text-sm font-bold text-white hover:bg-[#294273]"
+              >
+                Izinkan mikrofon &amp; mulai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         ref={chatContainerRef}
         className="relative min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[#F8F2E7] px-3 py-5 scroll-smooth sm:px-6 sm:py-10"
@@ -342,7 +401,7 @@ const ChatWindow: React.FC = () => {
             </div>
           )}
 
-          {liveTranscript.map((msg: TranscriptEntry) => (
+          {groupedLiveTranscript.map((msg: TranscriptEntry) => (
             <ChatBubble
               key={msg.id}
               message={msg.text}

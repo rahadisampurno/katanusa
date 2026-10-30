@@ -8,6 +8,18 @@ import {
   streamVoiceTurn,
   transcribeAudioBlob,
 } from '../../../libs/voiceStream';
+import {
+  decideSemanticTurn,
+  selectListeningBackchannel,
+} from '../../../libs/semanticTurnDetector';
+import {
+  storeVoiceTurnMeasurement,
+  type VoiceTurnMeasurement,
+} from '../../../libs/voiceQualityMetrics';
+import type {
+  RealtimeVoiceClient as RealtimeVoiceClientType,
+  RealtimeAgentState,
+} from '../../../libs/livekitVoice';
 import type { Expert } from '../../../types/expert';
 import type { TranscriptEntry } from '../../../types/audio';
 import useExpertChatStore from './useExpertChatStore';
@@ -39,8 +51,41 @@ type SpeechRecognitionLike = {
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
+type StartCallOptions = {
+  allowWithoutGesture?: boolean;
+};
+
 const AI_PLAYBACK_COOLDOWN_MS = 650;
-const MANUAL_INTERRUPT_RESUME_MS = 180;
+const MANUAL_INTERRUPT_RESUME_MS = 80;
+const FIRST_AUDIO_FALLBACK_MS = 420;
+const BACKCHANNEL_MIN_WORDS = 8;
+const BACKCHANNEL_COOLDOWN_MS = 7_000;
+
+const normalizeSpeechText = (text: string): string =>
+  text
+    .toLocaleLowerCase('id-ID')
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * SpeechRecognition kadang menangkap suara speaker sebagai input mikrofon.
+ * Abaikan transkrip yang sangat mirip dengan kalimat AI, tetapi tetap izinkan
+ * interjeksi singkat ("tunggu", "bukan", dst.) untuk melakukan barge-in.
+ */
+const isLikelyAiPlaybackEcho = (heardText: string, aiText: string): boolean => {
+  const heard = normalizeSpeechText(heardText);
+  const spoken = normalizeSpeechText(aiText);
+  if (!heard || !spoken) return false;
+  if (spoken.includes(heard)) return true;
+
+  const heardTokens = heard.split(' ').filter((token) => token.length > 1);
+  const spokenTokens = new Set(spoken.split(' '));
+  if (heardTokens.length === 0) return false;
+
+  const overlap = heardTokens.filter((token) => spokenTokens.has(token)).length;
+  return overlap / heardTokens.length >= 0.72;
+};
 
 const waitForBrowserVoices = async (): Promise<SpeechSynthesisVoice[]> => {
   const available = window.speechSynthesis.getVoices();
@@ -99,8 +144,13 @@ const speakWithSpeechSynthesis = (
   text: string,
   expert: Expert,
   onStartSpeaking?: () => void,
+  signal?: AbortSignal,
 ): Promise<void> =>
   new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve();
+      return;
+    }
     if (!('speechSynthesis' in window)) {
       onStartSpeaking?.();
       resolve();
@@ -115,6 +165,10 @@ const speakWithSpeechSynthesis = (
     }
 
     void waitForBrowserVoices().then((voices) => {
+      if (signal?.aborted) {
+        resolve();
+        return;
+      }
       const utterance = new SpeechSynthesisUtterance(cleanText);
       activeUtterance = utterance;
 
@@ -150,6 +204,10 @@ const speakWithSpeechSynthesis = (
           window.speechSynthesis.cancel();
         }
         window.setTimeout(() => {
+          if (signal?.aborted) {
+            resolve();
+            return;
+          }
           try {
             window.speechSynthesis.speak(utterance);
             window.setTimeout(triggerStart, 150);
@@ -168,7 +226,7 @@ const speakWithSpeechSynthesis = (
 const useExpertTalk = (
   expert: Expert | null,
 ): {
-  startCall: () => Promise<void | null>;
+  startCall: (options?: StartCallOptions) => Promise<void | null>;
   endCall: () => Promise<void>;
   interruptAi: () => void;
   mediaStreamRef: React.MutableRefObject<MediaStream | null>;
@@ -185,7 +243,14 @@ const useExpertTalk = (
   const transcriptTimerRef = useRef<number | null>(null);
   const resumeInputTimerRef = useRef<number | null>(null);
   const inputSuppressedRef = useRef(false);
+  const currentAiSpeechRef = useRef('');
   const lastTranscriptRef = useRef<{ text: string; timestamp: number } | null>(null);
+  const currentBackchannelRef = useRef('');
+  const lastBackchannelAtRef = useRef(0);
+  const lastBackchannelWordCountRef = useRef(0);
+  const currentMeasurementRef = useRef<VoiceTurnMeasurement | null>(null);
+  const interruptionDetectedAtRef = useRef<number | null>(null);
+  const realtimeClientRef = useRef<RealtimeVoiceClientType | null>(null);
 
   const clearPendingTranscript = useCallback((): void => {
     if (transcriptTimerRef.current !== null) {
@@ -207,8 +272,38 @@ const useExpertTalk = (
     store.setLiveTranscript([...store.liveTranscript, entry]);
   }, []);
 
+  const upsertAiTranscript = useCallback((id: string, text: string): void => {
+    const normalized = text.trim();
+    if (!normalized) return;
+    const store = useExpertTalkStore.getState();
+    const existingIndex = store.liveTranscript.findIndex((entry) => entry.id === id);
+    if (existingIndex === -1) {
+      store.setLiveTranscript([
+        ...store.liveTranscript,
+        {
+          id,
+          timestamp: dayjs().format(),
+          speaker: 'ai',
+          text: normalized,
+        },
+      ]);
+      return;
+    }
+    store.setLiveTranscript(
+      store.liveTranscript.map((entry) =>
+        entry.id === id ? { ...entry, text: normalized } : entry,
+      ),
+    );
+  }, []);
+
   const releaseMicrophone = useCallback((): void => {
-    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    mediaStreamRef.current?.getTracks().forEach((track) => {
+      try {
+        track.stop();
+      } catch {
+        // Track dapat sudah berakhir saat cleanup berjalan.
+      }
+    });
     mediaStreamRef.current = null;
   }, []);
 
@@ -218,16 +313,65 @@ const useExpertTalk = (
       audioQueuePlayerRef.current = null;
     }
     if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current.removeAttribute('src');
-      currentAudioRef.current.load();
+      const audio = currentAudioRef.current;
       currentAudioRef.current = null;
+      audio.onplay = null;
+      audio.onended = null;
+      audio.onerror = null;
+      try {
+        audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
+      } catch {
+        // Elemen audio mungkin sudah dilepas ketika panggilan ditutup.
+      }
     }
     if ('speechSynthesis' in window) {
       activeUtterance = null;
       window.speechSynthesis.cancel();
     }
   }, []);
+
+  const maybePlayListeningBackchannel = useCallback(
+    (transcript: string): void => {
+      if (!expert || !activeRef.current || inputSuppressedRef.current) return;
+      const words = normalizeSpeechText(transcript).split(' ').filter(Boolean);
+      const now = Date.now();
+      if (
+        words.length < BACKCHANNEL_MIN_WORDS ||
+        words.length - lastBackchannelWordCountRef.current < 5 ||
+        now - lastBackchannelAtRef.current < BACKCHANNEL_COOLDOWN_MS ||
+        !('speechSynthesis' in window) ||
+        window.speechSynthesis.speaking
+      ) {
+        return;
+      }
+
+      const options = selectListeningBackchannel(expert.suku);
+      const phrase = options[Math.floor(now / BACKCHANNEL_COOLDOWN_MS) % options.length];
+      const utterance = new SpeechSynthesisUtterance(phrase);
+      utterance.lang = expert.languageCode ?? 'id-ID';
+      utterance.rate = 1.08;
+      utterance.pitch = Math.min(1.35, Math.max(0.75, 1 + (expert.pitch ?? 0)));
+      utterance.volume = 0.32;
+      currentBackchannelRef.current = phrase;
+      lastBackchannelAtRef.current = now;
+      lastBackchannelWordCountRef.current = words.length;
+      const clearBackchannel = (): void => {
+        window.setTimeout(() => {
+          if (currentBackchannelRef.current === phrase) currentBackchannelRef.current = '';
+        }, 280);
+      };
+      utterance.onend = clearBackchannel;
+      utterance.onerror = clearBackchannel;
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        currentBackchannelRef.current = '';
+      }
+    },
+    [expert],
+  );
 
   const resumeListening = useCallback((): void => {
     if (
@@ -239,16 +383,16 @@ const useExpertTalk = (
     }
     try {
       recognitionRef.current.start();
-      useExpertTalkStore.getState().setIsListening(true);
     } catch {
       // Recognition may already be active.
     }
+    useExpertTalkStore.getState().setIsListening(true);
   }, []);
 
   /**
-   * Tutup input otomatis selama suara AI diputar. Web Speech API menangkap
-   * mikrofon secara terpisah dari MediaStream sehingga echoCancellation saja
-   * tidak cukup untuk mencegah suara speaker dibaca sebagai ucapan pengguna.
+   * Tandai input biasa sebagai tertahan selama suara AI diputar. Recognition
+   * tetap aktif khusus untuk mendeteksi barge-in; kemiripan transkrip dengan
+   * kalimat AI disaring sebagai gema pada handler recognition.
    */
   const suppressInputForAiPlayback = useCallback((): void => {
     clearResumeInputTimer();
@@ -256,11 +400,6 @@ const useExpertTalk = (
     clearPendingTranscript();
     useExpertTalkStore.getState().setInterimTranscript('');
     useExpertTalkStore.getState().setIsListening(false);
-    try {
-      recognitionRef.current?.abort();
-    } catch {
-      // Recognition mungkin sudah berhenti.
-    }
   }, [clearPendingTranscript, clearResumeInputTimer]);
 
   const scheduleInputResume = useCallback(
@@ -284,6 +423,15 @@ const useExpertTalk = (
    */
   const interruptAi = useCallback((): void => {
     if (!activeRef.current) return;
+    if (realtimeClientRef.current?.connected) {
+      realtimeClientRef.current.requestInterruption();
+      const realtimeStore = useExpertTalkStore.getState();
+      realtimeStore.setInterimTranscript('');
+      realtimeStore.setIsAiSpeaking(false);
+      realtimeStore.setIsInterrupted(true);
+      realtimeStore.setTurnState('interrupted');
+      return;
+    }
     clearResumeInputTimer();
     inputSuppressedRef.current = true;
     clearPendingTranscript();
@@ -292,6 +440,16 @@ const useExpertTalk = (
       turnAbortControllerRef.current = null;
     }
     stopAudioPlayback();
+    if (currentMeasurementRef.current && interruptionDetectedAtRef.current !== null) {
+      currentMeasurementRef.current.interruptionStopMs = Math.max(
+        0,
+        Math.round(performance.now() - interruptionDetectedAtRef.current),
+      );
+      storeVoiceTurnMeasurement(currentMeasurementRef.current);
+      currentMeasurementRef.current = null;
+    }
+    interruptionDetectedAtRef.current = null;
+    currentAiSpeechRef.current = '';
 
     const store = useExpertTalkStore.getState();
     store.setInterimTranscript('');
@@ -396,6 +554,11 @@ const useExpertTalk = (
     const normalized = text.trim();
     if (!normalized || !expert) return;
 
+    currentMeasurementRef.current = {
+      turnId: v1(),
+      startedAt: performance.now(),
+    };
+
     // Hentikan turn sebelumnya jika sedang berjalan
     if (turnAbortControllerRef.current) {
       turnAbortControllerRef.current.abort();
@@ -423,49 +586,64 @@ const useExpertTalk = (
     const aiEntryId = v1();
     let aiMessageAppended = false;
     let fullAccumulatedText = '';
+    const sentenceTextByIndex = new Map<number, string>();
+
+    const appendAiSentence = (index: number, sentence: string): void => {
+      const cleanSentence = sentence.trim();
+      if (!cleanSentence || turnAbortController.signal.aborted) return;
+      sentenceTextByIndex.set(index, cleanSentence);
+      fullAccumulatedText = Array.from(sentenceTextByIndex.entries())
+        .sort(([left], [right]) => left - right)
+        .map(([, value]) => value)
+        .join(' ');
+      currentAiSpeechRef.current = fullAccumulatedText;
+      aiMessageAppended = true;
+      upsertAiTranscript(aiEntryId, fullAccumulatedText);
+    };
 
     const player = new AudioQueuePlayer({
       onStartSpeaking: () => {
         if (turnAbortController.signal.aborted) return;
+        const measurement = currentMeasurementRef.current;
+        if (measurement && measurement.firstAudioMs === undefined) {
+          measurement.firstAudioMs = Math.round(performance.now() - measurement.startedAt);
+        }
         const currentStore = useExpertTalkStore.getState();
         currentStore.setTurnState('speaking');
       },
       onSentenceStart: (chunk) => {
         if (turnAbortController.signal.aborted) return;
-        fullAccumulatedText = fullAccumulatedText
-          ? `${fullAccumulatedText} ${chunk.text}`
-          : chunk.text;
-
-        const store = useExpertTalkStore.getState();
-        if (!aiMessageAppended) {
-          aiMessageAppended = true;
-          appendTranscript({
-            id: aiEntryId,
-            timestamp: dayjs().format(),
-            speaker: 'ai',
-            text: fullAccumulatedText,
-          });
-        } else {
-          const updatedList = store.liveTranscript.map((entry) =>
-            entry.id === aiEntryId ? { ...entry, text: fullAccumulatedText } : entry,
-          );
-          store.setLiveTranscript(updatedList);
-        }
+        currentAiSpeechRef.current = fullAccumulatedText || chunk.text;
       },
       onFinish: () => {
         if (turnAbortController.signal.aborted) return;
+        if (currentMeasurementRef.current) {
+          storeVoiceTurnMeasurement(currentMeasurementRef.current);
+          currentMeasurementRef.current = null;
+        }
         scheduleInputResume();
       },
       onError: (err) => {
         console.warn('[AudioQueuePlayer] Error:', err);
       },
+      playBrowserVoice: async (sentence) => {
+        if (!expert || turnAbortController.signal.aborted) return;
+        await speakWithSpeechSynthesis(
+          sentence,
+          expert,
+          undefined,
+          turnAbortController.signal,
+        );
+      },
     });
 
     audioQueuePlayerRef.current = player;
+    let streamAccepted = false;
+    let streamProducedAnswer = false;
+    const audioReadyIndexes = new Set<number>();
+    let firstAudioFallbackTimer: number | null = null;
 
     try {
-      let streamSucceeded = false;
-
       await streamVoiceTurn(
         {
           userMessage: normalized,
@@ -474,6 +652,7 @@ const useExpertTalk = (
         },
         {
           onMeta: (meta) => {
+            streamAccepted = true;
             if (meta.conversationId) {
               chatStore.setConversationId(meta.conversationId);
               sessionStorage.setItem(
@@ -489,28 +668,90 @@ const useExpertTalk = (
               store.setLiveTranscript(updated);
             }
           },
+          onSentence: ({ index, text: sentence }) => {
+            const measurement = currentMeasurementRef.current;
+            if (measurement && measurement.firstTextMs === undefined) {
+              measurement.firstTextMs = Math.round(performance.now() - measurement.startedAt);
+            }
+            streamProducedAnswer = true;
+            appendAiSentence(index, sentence);
+            if (index === 0 && firstAudioFallbackTimer === null) {
+              firstAudioFallbackTimer = window.setTimeout(() => {
+                firstAudioFallbackTimer = null;
+                if (
+                  turnAbortController.signal.aborted ||
+                  audioReadyIndexes.has(index) ||
+                  !activeRef.current
+                ) {
+                  return;
+                }
+                // Jalur spekulatif menjaga first-audio tetap rendah ketika
+                // provider neural lambat. Chunk neural index yang sama akan
+                // diabaikan AudioQueuePlayer agar tidak terdengar dua kali.
+                suppressInputForAiPlayback();
+                player.addBrowserVoiceChunk({ index, text: sentence });
+              }, FIRST_AUDIO_FALLBACK_MS);
+            }
+          },
           onAudioChunk: (chunk) => {
-            streamSucceeded = true;
+            audioReadyIndexes.add(chunk.index);
+            if (chunk.index === 0 && firstAudioFallbackTimer !== null) {
+              window.clearTimeout(firstAudioFallbackTimer);
+              firstAudioFallbackTimer = null;
+            }
             if (!audioQueuePlayerRef.current?.isSpeaking) {
               suppressInputForAiPlayback();
             }
             player.addChunk(chunk);
           },
-          onDone: () => {
-            streamSucceeded = true;
+          onAudioError: ({ index, text: failedSentence }) => {
+            audioReadyIndexes.add(index);
+            if (index === 0 && firstAudioFallbackTimer !== null) {
+              window.clearTimeout(firstAudioFallbackTimer);
+              firstAudioFallbackTimer = null;
+            }
+            const sentence = failedSentence || sentenceTextByIndex.get(index);
+            if (!sentence) return;
+            if (!audioQueuePlayerRef.current?.isSpeaking) {
+              suppressInputForAiPlayback();
+            }
+            player.addBrowserVoiceChunk({ index, text: sentence });
+          },
+          onDone: (done) => {
+            if (done.text?.trim()) {
+              fullAccumulatedText = done.text.trim();
+              currentAiSpeechRef.current = fullAccumulatedText;
+              aiMessageAppended = true;
+              upsertAiTranscript(aiEntryId, fullAccumulatedText);
+            }
             player.markStreamDone();
           },
           onError: (streamErr) => {
             console.warn('[VoiceStream] Stream error:', streamErr);
-            if (!streamSucceeded) {
-              throw new Error(streamErr.message || 'Stream error');
-            }
           },
         },
         { signal: turnAbortController.signal },
       );
     } catch (error) {
       if (turnAbortController.signal.aborted) {
+        return;
+      }
+
+      // Setelah event meta diterima, backend sudah menyimpan ucapan pengguna.
+      // Jangan mengirim ulang ke endpoint fallback karena akan menggandakan turn.
+      if (streamAccepted) {
+        player.markStreamDone();
+        talkStore.setErrorMessage(
+          streamProducedAnswer
+            ? 'Koneksi suara sempat terputus. Anda dapat langsung melanjutkan percakapan.'
+            : 'Jawaban suara terputus. Silakan ulangi pertanyaan Anda.',
+        );
+        if (!streamProducedAnswer) {
+          upsertAiTranscript(
+            aiEntryId,
+            'Maaf, sambungan suara terputus sebelum jawaban selesai disiapkan.',
+          );
+        }
         return;
       }
 
@@ -532,15 +773,21 @@ const useExpertTalk = (
           response.conversationId,
         );
 
-        const onVoiceStart = (): void => {
+        const showFallbackAnswer = (): void => {
           if (aiMessageAppended) return;
           aiMessageAppended = true;
-          appendTranscript({
-            id: aiEntryId,
-            timestamp: dayjs().format(),
-            speaker: 'ai',
-            text: response.text,
-          });
+          currentAiSpeechRef.current = response.text;
+          upsertAiTranscript(aiEntryId, response.text);
+        };
+
+        const onVoiceStart = (): void => {
+          showFallbackAnswer();
+          const measurement = currentMeasurementRef.current;
+          if (measurement && measurement.firstAudioMs === undefined) {
+            measurement.firstAudioMs = Math.round(
+              performance.now() - measurement.startedAt,
+            );
+          }
           const store = useExpertTalkStore.getState();
           store.setTurnState('speaking');
         };
@@ -550,11 +797,10 @@ const useExpertTalk = (
           : null;
 
         suppressInputForAiPlayback();
+        // Tampilkan jawaban segera; visibilitas teks tidak boleh bergantung pada
+        // keberhasilan autoplay atau TTS.
+        showFallbackAnswer();
         await speak(response.text, preloadedAudio, onVoiceStart);
-
-        if (!aiMessageAppended) {
-          onVoiceStart();
-        }
       } catch (fallbackError) {
         console.error('[useExpertTalk] Seluruh jalur suara gagal:', fallbackError);
         talkStore.setErrorMessage(
@@ -567,6 +813,10 @@ const useExpertTalk = (
           text: 'Maaf, layanan percakapan sedang mengalami kendala jaringan.',
         });
       } finally {
+        if (currentMeasurementRef.current) {
+          storeVoiceTurnMeasurement(currentMeasurementRef.current);
+          currentMeasurementRef.current = null;
+        }
         scheduleInputResume();
       }
     }
@@ -577,6 +827,7 @@ const useExpertTalk = (
     speak,
     stopAudioPlayback,
     suppressInputForAiPlayback,
+    upsertAiTranscript,
   ]);
 
   const endCall = useCallback(async (): Promise<void> => {
@@ -587,22 +838,46 @@ const useExpertTalk = (
     clearPendingTranscript();
     clearResumeInputTimer();
     lastTranscriptRef.current = null;
+    currentMeasurementRef.current = null;
+    interruptionDetectedAtRef.current = null;
+    currentBackchannelRef.current = '';
     if (turnAbortControllerRef.current) {
       turnAbortControllerRef.current.abort();
       turnAbortControllerRef.current = null;
     }
-    recognitionRef.current?.abort();
+    const realtimeClient = realtimeClientRef.current;
+    realtimeClientRef.current = null;
+    if (realtimeClient) {
+      try {
+        await realtimeClient.disconnect();
+      } catch (error) {
+        console.warn('[RealtimeVoice] Cleanup room gagal:', error);
+      }
+    }
+    const recognition = recognitionRef.current;
     recognitionRef.current = null;
+    if (recognition) {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      try {
+        recognition.abort();
+      } catch {
+        // Recognition mungkin sudah berhenti ketika tombol akhir ditekan.
+      }
+    }
     stopAudioPlayback();
     releaseMicrophone();
+    currentAiSpeechRef.current = '';
 
     const talkStore = useExpertTalkStore.getState();
     const transcript = talkStore.liveTranscript;
     if (transcript.length > 0) {
       const chatStore = useExpertChatStore.getState();
+      const knownIds = new Set(chatStore.messages.map((message) => message.id));
       chatStore.setMessages([
         ...chatStore.messages,
-        ...transcript.map((entry) => ({
+        ...transcript.filter((entry) => !knownIds.has(entry.id)).map((entry) => ({
           sender: entry.speaker === 'user' ? ('user' as const) : ('ai' as const),
           text: entry.text,
           timestamp: entry.timestamp,
@@ -655,6 +930,30 @@ const useExpertTalk = (
     let silenceStart: number | null = null;
     let recorder: MediaRecorder | null = null;
     let chunks: Blob[] = [];
+    let aiPlaybackStartedAt: number | null = null;
+    let aiNoiseFloor = 0;
+    let bargeInStartedAt: number | null = null;
+    let pendingServerTranscript = '';
+    let semanticEndpointTimer: number | null = null;
+
+    const scheduleServerTranscript = (text: string): void => {
+      pendingServerTranscript = [pendingServerTranscript, text.trim()]
+        .filter(Boolean)
+        .join(' ');
+      if (!pendingServerTranscript) return;
+      if (semanticEndpointTimer !== null) window.clearTimeout(semanticEndpointTimer);
+      const decision = decideSemanticTurn({
+        transcript: pendingServerTranscript,
+        isFinal: true,
+        aiSpeaking: false,
+      });
+      semanticEndpointTimer = window.setTimeout(() => {
+        semanticEndpointTimer = null;
+        const completed = pendingServerTranscript;
+        pendingServerTranscript = '';
+        if (completed && activeRef.current) void processTranscript(completed);
+      }, decision.endpointDelayMs);
+    };
 
     const supportedMime = [
       'audio/webm;codecs=opus',
@@ -667,14 +966,26 @@ const useExpertTalk = (
     const vadInterval = window.setInterval(() => {
       if (!activeRef.current) {
         window.clearInterval(vadInterval);
+        if (semanticEndpointTimer !== null) window.clearTimeout(semanticEndpointTimer);
         if (recorder && recorder.state !== 'inactive') {
           recorder.stop();
         }
-        source.disconnect();
-        analyser.disconnect();
-        void audioContext?.close();
+        try {
+          source.disconnect();
+          analyser.disconnect();
+        } catch {
+          // Audio graph dapat sudah dilepas oleh browser saat track berhenti.
+        }
+        if (audioContext?.state !== 'closed') {
+          void audioContext?.close().catch(() => undefined);
+        }
         return;
       }
+
+      analyser.getByteFrequencyData(samples);
+      const average = samples.reduce((sum, value) => sum + value, 0) / samples.length;
+      const level = Math.min(1, Math.max(0, (average - 4) / 42));
+      const now = Date.now();
 
       if (inputSuppressedRef.current) {
         silenceStart = null;
@@ -687,14 +998,39 @@ const useExpertTalk = (
             recorder.stop();
           }
         }
+
+        aiPlaybackStartedAt ??= now;
+        if (now - aiPlaybackStartedAt < 700) {
+          aiNoiseFloor = Math.max(aiNoiseFloor, level);
+          bargeInStartedAt = null;
+          return;
+        }
+
+        // Fallback Safari/Firefox: cari lonjakan suara dekat mikrofon yang
+        // bertahan di atas noise/gema speaker, lalu perlakukan sebagai barge-in.
+        aiNoiseFloor = aiNoiseFloor * 0.94 + level * 0.06;
+        const bargeInThreshold = Math.min(
+          0.72,
+          Math.max(0.2, aiNoiseFloor + 0.14),
+        );
+        if (level > bargeInThreshold) {
+          bargeInStartedAt ??= now;
+          if (now - bargeInStartedAt >= 220) {
+            interruptionDetectedAtRef.current = performance.now();
+            interruptAi();
+            aiPlaybackStartedAt = null;
+            aiNoiseFloor = 0;
+            bargeInStartedAt = null;
+          }
+        } else {
+          bargeInStartedAt = null;
+        }
         return;
       }
 
-      analyser.getByteFrequencyData(samples);
-      const average = samples.reduce((s, v) => s + v, 0) / samples.length;
-      const level = Math.min(1, Math.max(0, (average - 4) / 42));
-
-      const now = Date.now();
+      aiPlaybackStartedAt = null;
+      aiNoiseFloor = 0;
+      bargeInStartedAt = null;
       const isSpeaking = level > 0.08;
 
       if (isSpeaking) {
@@ -728,7 +1064,7 @@ const useExpertTalk = (
               try {
                 const res = await transcribeAudioBlob(fullBlob, expert.id);
                 if (res.text && activeRef.current) {
-                  void processTranscript(res.text);
+                  scheduleServerTranscript(res.text);
                 }
               } catch (err) {
                 console.warn('[ServerSTT] Gagal transkripsi:', err);
@@ -746,7 +1082,7 @@ const useExpertTalk = (
       } else if (isRecording) {
         if (silenceStart === null) {
           silenceStart = now;
-        } else if (now - silenceStart > 850) {
+        } else if (now - silenceStart > 420) {
           isRecording = false;
           silenceStart = null;
           if (recorder && recorder.state !== 'inactive') {
@@ -755,9 +1091,11 @@ const useExpertTalk = (
         }
       }
     }, 70);
-  }, [expert, processTranscript]);
+  }, [expert, interruptAi, processTranscript]);
 
-  const startCall = useCallback(async (): Promise<void | null> => {
+  const startCall = useCallback(async (
+    options: StartCallOptions = {},
+  ): Promise<void | null> => {
     if (
       !expert ||
       useExpertTalkStore.getState().callStatus !== CallStatusEnum.IDLE
@@ -770,6 +1108,17 @@ const useExpertTalk = (
     };
     const Recognition =
       browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition;
+
+    if (
+      navigator.userActivation &&
+      !navigator.userActivation.isActive &&
+      !options.allowWithoutGesture
+    ) {
+      useExpertTalkStore.getState().setErrorMessage(
+        'Klik tombol panggilan untuk mengaktifkan mikrofon. Browser tidak mengizinkan panggilan dimulai otomatis.',
+      );
+      return null;
+    }
 
     // Prime audio playback on user gesture to avoid autoplay restrictions
     try {
@@ -805,6 +1154,121 @@ const useExpertTalk = (
     const callAttempt = callAttemptRef.current + 1;
     callAttemptRef.current = callAttempt;
 
+    // Jalur utama: WebRTC full-duplex dengan semantic turn detection di worker.
+    // Bila fitur belum dikonfigurasi atau koneksi gagal, jalur lama di bawah
+    // tetap dipakai agar panggilan tidak kehilangan fungsi.
+    try {
+      const { RealtimeVoiceClient } = await import('../../../libs/livekitVoice');
+      const chatStore = useExpertChatStore.getState();
+      const session = await RealtimeVoiceClient.requestSession({
+        personaId: expert.id,
+        conversationId: chatStore.conversationId,
+      });
+      if (
+        callAttemptRef.current !== callAttempt ||
+        useExpertTalkStore.getState().callStatus !== CallStatusEnum.CONNECTING
+      ) {
+        return null;
+      }
+
+      const updateRealtimeState = (state: RealtimeAgentState): void => {
+        if (!activeRef.current) return;
+        const currentStore = useExpertTalkStore.getState();
+        if (state === 'speaking') currentStore.setTurnState('speaking');
+        else if (state === 'thinking' || state === 'initializing') {
+          currentStore.setTurnState('thinking');
+        } else {
+          currentStore.setTurnState('listening');
+        }
+      };
+      const realtimeClient = new RealtimeVoiceClient({
+        onTranscript: ({ id, text, speaker }) => {
+          const normalized = text.trim();
+          if (!normalized || !activeRef.current) return;
+          const currentStore = useExpertTalkStore.getState();
+          const existingIndex = currentStore.liveTranscript.findIndex(
+            (entry) => entry.id === id,
+          );
+          const nextEntry: TranscriptEntry = {
+            id,
+            timestamp: dayjs().format(),
+            speaker,
+            text: normalized,
+          };
+          currentStore.setLiveTranscript(
+            existingIndex === -1
+              ? [...currentStore.liveTranscript, nextEntry]
+              : currentStore.liveTranscript.map((entry) =>
+                  entry.id === id ? { ...entry, text: normalized } : entry,
+                ),
+          );
+        },
+        onAgentState: updateRealtimeState,
+        onLocalStream: (stream) => {
+          mediaStreamRef.current = stream;
+        },
+        onDisconnected: () => {
+          if (!activeRef.current) return;
+          void endCall().then(() => {
+            useExpertTalkStore
+              .getState()
+              .setErrorMessage(
+                'Sambungan panggilan real-time terputus. Silakan mulai panggilan kembali.',
+              );
+          });
+        },
+      });
+      realtimeClientRef.current = realtimeClient;
+      await realtimeClient.connect(session);
+      if (
+        callAttemptRef.current !== callAttempt ||
+        useExpertTalkStore.getState().callStatus !== CallStatusEnum.CONNECTING
+      ) {
+        await realtimeClient.disconnect();
+        realtimeClientRef.current = null;
+        return null;
+      }
+
+      chatStore.setConversationId(session.conversationId);
+      sessionStorage.setItem(
+        `katanusa:conversation:${expert.id}`,
+        session.conversationId,
+      );
+      activeRef.current = true;
+      talkStore.setCallStatus(CallStatusEnum.ACTIVE);
+      talkStore.setTurnState('listening');
+      return undefined;
+    } catch (error) {
+      const realtimeClient = realtimeClientRef.current;
+      realtimeClientRef.current = null;
+      if (realtimeClient) {
+        await realtimeClient.disconnect().catch(() => undefined);
+      }
+      if (
+        callAttemptRef.current !== callAttempt ||
+        useExpertTalkStore.getState().callStatus !== CallStatusEnum.CONNECTING
+      ) {
+        return null;
+      }
+      const microphoneDenied =
+        (error instanceof DOMException &&
+          (error.name === 'NotAllowedError' || error.name === 'SecurityError')) ||
+        (error instanceof Error &&
+          error.message === 'Izin mikrofon belum diberikan.');
+      if (microphoneDenied) {
+        talkStore.setCallStatus(CallStatusEnum.IDLE);
+        talkStore.setErrorMessage(
+          'Akses mikrofon belum diizinkan. Klik ikon izin di bilah alamat browser, pilih Izinkan, lalu mulai panggilan kembali.',
+        );
+        releaseMicrophone();
+        return null;
+      }
+      console.info(
+        '[RealtimeVoice] Jalur WebRTC tidak tersedia, memakai fallback standar:',
+        error,
+      );
+    }
+
     try {
       const supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -821,6 +1285,12 @@ const useExpertTalk = (
           ...(supportedConstraints.channelCount
             ? { channelCount: { ideal: 1 } }
             : {}),
+          ...(supportedConstraints.sampleRate
+            ? { sampleRate: { ideal: 48_000 } }
+            : {}),
+          ...(supportedConstraints.sampleSize
+            ? { sampleSize: { ideal: 16 } }
+            : {}),
         },
       });
       if (
@@ -829,6 +1299,18 @@ const useExpertTalk = (
       ) {
         stream.getTracks().forEach((track) => track.stop());
         return null;
+      }
+      const microphoneTrack = stream.getAudioTracks()[0];
+      if (microphoneTrack) {
+        microphoneTrack.contentHint = 'speech';
+        // Sejumlah browser baru mengaktifkan rangkaian AEC/NS sepenuhnya
+        // setelah track hidup. Pengulangan constraints ini bersifat best effort.
+        void microphoneTrack.applyConstraints({
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true },
+          channelCount: { ideal: 1 },
+        }).catch(() => undefined);
       }
       mediaStreamRef.current = stream;
     } catch (error) {
@@ -863,12 +1345,6 @@ const useExpertTalk = (
       recognition.lang = preferredLanguage;
 
       recognition.onresult = (event): void => {
-        if (inputSuppressedRef.current) {
-          clearPendingTranscript();
-          useExpertTalkStore.getState().setInterimTranscript('');
-          return;
-        }
-
         let finalTranscript = '';
         let interimTranscript = '';
         for (
@@ -884,8 +1360,56 @@ const useExpertTalk = (
         }
 
         const currentStore = useExpertTalkStore.getState();
+        const activeSpeech = (finalTranscript || interimTranscript).trim();
+        const backchannelEcho = isLikelyAiPlaybackEcho(
+          activeSpeech,
+          currentBackchannelRef.current,
+        );
+
+        if (backchannelEcho) {
+          currentStore.setInterimTranscript('');
+          return;
+        }
+
+        if (inputSuppressedRef.current) {
+          const aiIsTalking =
+            currentStore.isAiSpeaking ||
+            currentStore.turnState === 'speaking' ||
+            (audioQueuePlayerRef.current?.isSpeaking ?? false);
+          const likelyEcho = isLikelyAiPlaybackEcho(
+            activeSpeech,
+            currentAiSpeechRef.current,
+          );
+          const turnDecision = decideSemanticTurn({
+            transcript: activeSpeech,
+            isFinal: Boolean(finalTranscript.trim()),
+            aiSpeaking: aiIsTalking,
+          });
+
+          if (
+            !aiIsTalking ||
+            !activeSpeech ||
+            likelyEcho ||
+            turnDecision.kind !== 'interrupt'
+          ) {
+            currentStore.setInterimTranscript('');
+            return;
+          }
+
+          // Barge-in otomatis: hentikan audio/stream seketika lalu teruskan
+          // transkrip yang sama sebagai awal giliran baru pengguna.
+          interruptionDetectedAtRef.current = performance.now();
+          interruptAi();
+          clearResumeInputTimer();
+          inputSuppressedRef.current = false;
+          processingRef.current = false;
+          currentStore.setTurnState('listening');
+        }
 
         currentStore.setInterimTranscript(interimTranscript.trim());
+        if (interimTranscript.trim()) {
+          maybePlayListeningBackchannel(interimTranscript);
+        }
 
         if (finalTranscript.trim()) {
           currentStore.setInterimTranscript('');
@@ -900,18 +1424,21 @@ const useExpertTalk = (
             window.clearTimeout(transcriptTimerRef.current);
           }
 
-          // Debounce 600ms hening sebelum mengirim ucapan
+          const turnDecision = decideSemanticTurn({
+            transcript: pendingTranscriptRef.current,
+            isFinal: true,
+            aiSpeaking: false,
+          });
+
+          // Endpoint adaptif: pikiran lengkap dikirim cepat, sedangkan filler,
+          // konjungsi, dan jeda berpikir diberi ruang lebih panjang.
           transcriptTimerRef.current = window.setTimeout(() => {
             transcriptTimerRef.current = null;
             const transcript = pendingTranscriptRef.current.trim();
             pendingTranscriptRef.current = '';
             if (!transcript) return;
 
-            const normalizedTranscript = transcript
-              .toLocaleLowerCase('id-ID')
-              .replace(/[^\p{L}\p{N}\s]/gu, '')
-              .replace(/\s+/g, ' ')
-              .trim();
+            const normalizedTranscript = normalizeSpeechText(transcript);
             const previousTranscript = lastTranscriptRef.current;
             const now = Date.now();
             const isRecentDuplicate =
@@ -926,7 +1453,7 @@ const useExpertTalk = (
               timestamp: now,
             };
             void processTranscript(transcript);
-          }, 600);
+          }, turnDecision.endpointDelayMs);
         }
       };
 
@@ -962,8 +1489,8 @@ const useExpertTalk = (
       };
 
       recognition.onend = (): void => {
-        // Jaga agar recognition terus hidup selama panggilan aktif
-        if (activeRef.current && !inputSuppressedRef.current) {
+        // Recognition tetap hidup saat AI bicara untuk mendeteksi barge-in.
+        if (activeRef.current) {
           try {
             recognition.start();
           } catch {
@@ -982,10 +1509,11 @@ const useExpertTalk = (
 
     return undefined;
   }, [
-    clearPendingTranscript,
     clearResumeInputTimer,
     endCall,
     expert,
+    interruptAi,
+    maybePlayListeningBackchannel,
     processTranscript,
     releaseMicrophone,
     resumeListening,
@@ -997,14 +1525,32 @@ const useExpertTalk = (
     activeRef.current = false;
     inputSuppressedRef.current = false;
     processingRef.current = false;
+    currentMeasurementRef.current = null;
+    interruptionDetectedAtRef.current = null;
+    currentBackchannelRef.current = '';
     clearPendingTranscript();
     clearResumeInputTimer();
     if (turnAbortControllerRef.current) {
       turnAbortControllerRef.current.abort();
       turnAbortControllerRef.current = null;
     }
-    recognitionRef.current?.abort();
+    const realtimeClient = realtimeClientRef.current;
+    realtimeClientRef.current = null;
+    if (realtimeClient) {
+      void realtimeClient.disconnect().catch(() => undefined);
+    }
+    const recognition = recognitionRef.current;
     recognitionRef.current = null;
+    if (recognition) {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      try {
+        recognition.abort();
+      } catch {
+        // Recognition mungkin sudah berhenti ketika komponen dilepas.
+      }
+    }
     stopAudioPlayback();
     releaseMicrophone();
   }, [

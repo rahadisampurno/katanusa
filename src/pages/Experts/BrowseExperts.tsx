@@ -23,7 +23,6 @@ const BrowseExpertsPage = (): JSX.Element => {
 
   const [allExperts, setAllExperts] = useState(verifiedBaseExperts);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredExperts, setFilteredExperts] = useState(verifiedBaseExperts);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Filter states
@@ -34,7 +33,7 @@ const BrowseExpertsPage = (): JSX.Element => {
   // Sort state: 'asc' for A-Z, 'desc' for Z-A
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 500);
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
 
   // Ambil profil pakar terkelola dari server (governed profiles)
   useEffect(() => {
@@ -68,49 +67,41 @@ const BrowseExpertsPage = (): JSX.Element => {
     return Array.from(new Set(specialties)).sort();
   }, [allExperts]);
 
-  const handleSearch = useCallback(() => {
+  // Memoized filter and sort - avoids state synchronization lag & eliminates redundant renders
+  const filteredExperts = useMemo(() => {
     let filtered = allExperts;
 
-    // Apply search query filter
-    if (debouncedSearchQuery) {
+    if (debouncedSearchQuery.trim()) {
+      const q = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter((expert) => {
         return (
-          expert.name
-            .toLowerCase()
-            .includes(debouncedSearchQuery.toLowerCase()) ||
-          expert.role.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+          expert.name.toLowerCase().includes(q) ||
+          expert.role.toLowerCase().includes(q) ||
+          (expert.suku && expert.suku.toLowerCase().includes(q)) ||
+          expert.specialties.some((s) => s.toLowerCase().includes(q))
         );
       });
     }
 
-    // Apply role filter (Semua Keahlian)
     if (selectedRole) {
       filtered = filtered.filter((expert) => expert.role === selectedRole);
     }
 
-    // Apply suku filter (Asal Daerah)
     if (selectedSuku) {
       filtered = filtered.filter((expert) => expert.suku === selectedSuku);
     }
 
-    // Apply specialty filter (Topik)
     if (selectedSpecialty) {
       filtered = filtered.filter((expert) =>
         expert.specialties.includes(selectedSpecialty),
       );
     }
 
-    // Apply sorting
-    filtered = [...filtered].sort((a, b) => {
-      if (sortOrder === 'asc') {
-        return a.name.localeCompare(b.name);
-      } else {
-        return b.name.localeCompare(a.name);
-      }
+    return [...filtered].sort((a, b) => {
+      return sortOrder === 'asc'
+        ? a.name.localeCompare(b.name)
+        : b.name.localeCompare(a.name);
     });
-
-    setFilteredExperts(filtered);
-    setCurrentPage(1); // Reset to first page on filter change
   }, [
     allExperts,
     debouncedSearchQuery,
@@ -120,9 +111,16 @@ const BrowseExpertsPage = (): JSX.Element => {
     sortOrder,
   ]);
 
+  // Reset pagination to first page when filtering or sorting changes
   useEffect(() => {
-    handleSearch();
-  }, [handleSearch]);
+    setCurrentPage(1);
+  }, [
+    debouncedSearchQuery,
+    selectedRole,
+    selectedSuku,
+    selectedSpecialty,
+    sortOrder,
+  ]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -150,7 +148,7 @@ const BrowseExpertsPage = (): JSX.Element => {
       {/* Header Section with different styling than Home */}
       <div className="bg-primary-dark relative h-[400px] flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-blue-600 to-blue-400">
         <Navbar isWhite />
-        <div className="absolute inset-0 bg-center opacity-10 bg-[url('/assets/bg-experts-header.png')] z-0"></div>
+        <div className="absolute inset-0 bg-center opacity-10 bg-[url('/assets/bg-experts-header.webp')] z-0"></div>
         <div className="relative z-10 mt-10 px-4 text-center">
           <h1 className="text-4xl font-bold text-white mb-2 font-itim">
             Direktori Pakar &amp; Penjaga Tradisi

@@ -11,7 +11,7 @@ const About = (): JSX.Element => {
     <main className="bg-[#1E315A]">
       <section className="relative min-h-[60vh] overflow-hidden">
         <Navbar isWhite />
-        <div className="absolute inset-0 bg-cover opacity-15 bg-[url('/assets/bg-experts-header.png')] pointer-events-none"></div>
+        <div className="absolute inset-0 bg-cover opacity-15 bg-[url('/assets/bg-experts-header.webp')] pointer-events-none"></div>
         <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-4 py-24 text-center md:px-6 md:py-32 xl:px-0">
           <h1 className="text-3xl md:text-5xl font-itim text-white mb-4">Tentang Katanusa</h1>
           <p className="text-white/90 max-w-2xl leading-relaxed">

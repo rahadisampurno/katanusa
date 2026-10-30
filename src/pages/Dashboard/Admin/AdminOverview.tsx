@@ -18,6 +18,7 @@ import {
   Users,
 } from 'lucide-react';
 import Sidebar from '../../../components/layout/Sidebar';
+import { getApiErrorMessage } from '../../../libs/apiError';
 import network from '../../../libs/network';
 import { PerisaiTalawangIcon, SuryaMajapahitIcon } from '../../../components/icons/NusantaraIcons';
 import dayjs from 'dayjs';
@@ -60,8 +61,8 @@ export const AdminOverview: React.FC = () => {
       }>('/admin/dashboard');
       setMetrics(res.data.action_center);
       setRecentLogs(res.data.recent_audit_logs || []);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Gagal memuat ringkasan tata kelola.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Gagal memuat ringkasan tata kelola.'));
     } finally {
       setLoading(false);
     }

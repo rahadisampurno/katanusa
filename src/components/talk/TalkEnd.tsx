@@ -66,7 +66,7 @@ const TalkEnd: React.FC<TalkEndProps> = ({
     const audioContext = new AudioContextClass();
     const analyser = audioContext.createAnalyser();
     const source = audioContext.createMediaStreamSource(mediaStream);
-    const samples = new Uint8Array(analyser.frequencyBinCount);
+    const samples = new Uint8Array(analyser.fftSize);
     let animationFrame = 0;
     let lastUpdate = 0;
     let quietStartedAt: number | null = null;
@@ -79,11 +79,15 @@ const TalkEnd: React.FC<TalkEndProps> = ({
     void audioContext.resume();
 
     const measure = (timestamp: number): void => {
-      analyser.getByteFrequencyData(samples);
+      analyser.getByteTimeDomainData(samples);
       if (timestamp - lastUpdate > 70) {
-        const average =
-          samples.reduce((sum, value) => sum + value, 0) / samples.length;
-        const normalizedLevel = Math.min(1, Math.max(0, (average - 4) / 42));
+        const meanSquare =
+          samples.reduce((sum, value) => {
+            const centered = (value - 128) / 128;
+            return sum + centered * centered;
+          }, 0) / samples.length;
+        const rms = Math.sqrt(meanSquare);
+        const normalizedLevel = Math.min(1, Math.max(0, (rms - 0.003) / 0.08));
         setMicrophoneLevel(normalizedLevel);
 
         if (!isListening) {
@@ -93,7 +97,7 @@ const TalkEnd: React.FC<TalkEndProps> = ({
             currentHint = null;
             setAudioHint(null);
           }
-        } else if (normalizedLevel < 0.025) {
+        } else if (normalizedLevel < 0.012) {
           quietStartedAt ??= timestamp;
           noisyStartedAt = null;
           if (timestamp - quietStartedAt > 3500 && currentHint !== 'quiet') {
@@ -131,18 +135,24 @@ const TalkEnd: React.FC<TalkEndProps> = ({
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
-      source.disconnect();
-      analyser.disconnect();
-      void audioContext.close();
+      try {
+        source.disconnect();
+        analyser.disconnect();
+      } catch {
+        // Browser dapat lebih dulu melepas audio graph saat panggilan berakhir.
+      }
+      if (audioContext.state !== 'closed') {
+        void audioContext.close().catch(() => undefined);
+      }
     };
   }, [callStatus, isListening, mediaStreamRef]);
 
   const isVoiceDetected =
-    isListening && (microphoneLevel > 0.08 || interimTranscript.length > 0);
+    isListening && (microphoneLevel > 0.035 || interimTranscript.length > 0);
 
   const statusText =
     callStatus === CallStatusEnum.CONNECTING
-      ? 'Meminta akses mikrofon...'
+      ? 'Menyiapkan panggilan suara...'
       : isInterrupted
         ? 'Percakapan disela'
         : isTranscribing
@@ -159,13 +169,13 @@ const TalkEnd: React.FC<TalkEndProps> = ({
 
   const statusDescription =
     callStatus === CallStatusEnum.CONNECTING
-      ? 'Izinkan akses mikrofon untuk memulai percakapan.'
+      ? 'Jika browser meminta izin, pilih Izinkan agar percakapan dapat dimulai.'
       : isInterrupted
         ? 'AI langsung berhenti bicara, silakan lanjutkan pertanyaan baru Anda.'
         : isTranscribing
           ? 'Menganalisis intonasi dan kosakata budaya dengan akurasi tinggi.'
           : isAiSpeaking || turnState === 'speaking'
-            ? 'Mikrofon dijeda agar suara AI tidak terbaca sebagai ucapan Anda. Tekan “Giliran Saya” untuk menyela.'
+            ? 'Mikrofon tetap aktif. Ucapkan pertanyaan untuk menyela; “muhun/iya” dianggap respons mendengar, bukan interupsi.'
             : isRagSearching || turnState === 'thinking'
               ? 'Mengaitkan pengetahuan adat dan merumuskan jawaban terbaik.'
               : interimTranscript

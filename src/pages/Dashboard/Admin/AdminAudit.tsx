@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   AlertCircle,
   Calendar,
@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import Sidebar from '../../../components/layout/Sidebar';
+import { getApiErrorMessage } from '../../../libs/apiError';
 import network from '../../../libs/network';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
@@ -32,7 +33,7 @@ interface AuditEventItem {
   action: string;
   resource_type: string;
   resource_id: string;
-  metadata: any;
+  metadata: Record<string, unknown> | null;
   created_at: string;
   actor_name: string | null;
   actor_email: string | null;
@@ -55,7 +56,7 @@ export const AdminAudit: React.FC = () => {
   const [inspectedEvent, setInspectedEvent] = useState<AuditEventItem | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const fetchAuditEvents = async () => {
+  const fetchAuditEvents = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -73,16 +74,16 @@ export const AdminAudit: React.FC = () => {
       setLogs(res.data.items || []);
       setTotalPages(res.data.pagination.total_pages || 1);
       setTotalItems(res.data.pagination.total_items || 0);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Gagal memuat log audit.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Gagal memuat log audit.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [actionFilter, page, resourceFilter]);
 
   useEffect(() => {
-    fetchAuditEvents();
-  }, [page, actionFilter, resourceFilter]);
+    void fetchAuditEvents();
+  }, [fetchAuditEvents]);
 
   const handleCopyJson = () => {
     if (!inspectedEvent) return;

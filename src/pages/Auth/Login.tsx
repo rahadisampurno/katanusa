@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import AuthShell from '../../components/auth/AuthShell';
 import Button from '../../components/ui/Button';
+import { getApiErrorMessage, getApiErrorStatus } from '../../libs/apiError';
 import auth from '../../libs/auth';
 import network from '../../libs/network';
 
@@ -109,19 +110,15 @@ const Login: React.FC = () => {
       }
       await handleSuccessfulAuth(response.data.mfaEnrollmentRequired);
     },
-    onError: (loginError: any) => {
-      const msg =
-        loginError?.response?.data?.error?.message ||
-        loginError?.response?.data?.message ||
-        loginError?.message ||
-        '';
+    onError: (loginError: unknown) => {
+      const msg = getApiErrorMessage(loginError, '');
 
       if (
         msg.toLowerCase().includes('kredensial') ||
         msg.toLowerCase().includes('sandi') ||
         msg.toLowerCase().includes('password') ||
         msg.toLowerCase().includes('email') ||
-        loginError?.response?.status === 401
+        getApiErrorStatus(loginError) === 401
       ) {
         setError(
           'Email atau kata sandi tidak cocok. Silakan periksa kembali atau gunakan fitur lupa kata sandi.',

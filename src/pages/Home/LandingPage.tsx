@@ -59,7 +59,9 @@ const LandingPage = (): JSX.Element => {
       <section className="relative min-h-[50vh] bg-[#1E315A] overflow-hidden">
         <img
           alt="bg-why-katanusa"
-          src="/assets/bg-why-katanusa.png"
+          src="/assets/bg-why-katanusa.webp"
+          loading="lazy"
+          decoding="async"
           className="w-195 object-contain relative md:absolute md:bottom-0 md:left-0"
         />
         <div className="flex flex-col md:flex-row justify-between min-h-[50vh] relative z-10">

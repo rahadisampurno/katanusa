@@ -23,6 +23,7 @@ import {
   Users,
 } from 'lucide-react';
 import Sidebar from '../../../components/layout/Sidebar';
+import { getApiErrorMessage } from '../../../libs/apiError';
 import network from '../../../libs/network';
 import auth from '../../../libs/auth';
 import dayjs from 'dayjs';
@@ -76,11 +77,9 @@ export const KnowledgeReviewQueue: React.FC = () => {
         '/reviewer/knowledge/queue'
       );
       setQueue(res.data.queue || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          'Gagal memuat antrean kurasi materi pengetahuan.'
+        getApiErrorMessage(err, 'Gagal memuat antrean kurasi materi pengetahuan.'),
       );
     } finally {
       setLoading(false);
@@ -99,8 +98,8 @@ export const KnowledgeReviewQueue: React.FC = () => {
       setTimeout(() => {
         navigate(`/reviewer/knowledge/${versionId}`);
       }, 800);
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Gagal mengklaim materi pengetahuan.');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Gagal mengklaim materi pengetahuan.'));
       fetchQueue();
     } finally {
       setClaimingId(null);
@@ -117,8 +116,8 @@ export const KnowledgeReviewQueue: React.FC = () => {
       setNotice('Klaim penugasan materi berhasil dilepaskan.');
       fetchQueue();
       setTimeout(() => setNotice(null), 4000);
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Gagal melepaskan klaim penugasan.');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Gagal melepaskan klaim penugasan.'));
     } finally {
       setClaimingId(null);
     }

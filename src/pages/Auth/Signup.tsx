@@ -34,6 +34,7 @@ import { PerisaiTalawangIcon } from '../../components/icons/NusantaraIcons';
 // @ts-expect-error - SVG import
 import LogoKataNusa from '../../components/svgs/logo-katanusa.svg?react';
 import Button from '../../components/ui/Button';
+import { getApiErrorMessage } from '../../libs/apiError';
 import PhotoUpload from '../../components/ui/PhotoUpload';
 import auth from '../../libs/auth';
 import network from '../../libs/network';
@@ -382,12 +383,13 @@ const Signup: React.FC = () => {
       if (limitNotice) {
         setTimeout(() => setUploadError(''), 5000);
       }
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.error?.message ||
-        err?.response?.data?.message ||
-        'Gagal mengunggah berkas. Silakan coba kembali.';
-      setUploadError(msg);
+    } catch (err: unknown) {
+      setUploadError(
+        getApiErrorMessage(
+          err,
+          'Gagal mengunggah berkas. Silakan coba kembali.',
+        ),
+      );
     } finally {
       setIsUploadingFile(false);
       if (fileInputRef.current) {
@@ -406,7 +408,7 @@ const Signup: React.FC = () => {
 
   // Mutasi Pendaftaran Akun
   const signupMutation = useMutation({
-    mutationFn: async (payload: Record<string, any>) =>
+    mutationFn: async (payload: Record<string, unknown>) =>
       await network.post('/auth/signup', payload),
     onSuccess: () => {
       setError('');
@@ -417,12 +419,13 @@ const Signup: React.FC = () => {
         setCurrentStep(3);
       }
     },
-    onError: (err: any) => {
-      const msg =
-        err?.response?.data?.error?.message ||
-        err?.response?.data?.message ||
-        'Gagal melakukan pendaftaran. Silakan coba kembali.';
-      setError(msg);
+    onError: (err: unknown) => {
+      setError(
+        getApiErrorMessage(
+          err,
+          'Gagal melakukan pendaftaran. Silakan coba kembali.',
+        ),
+      );
     },
   });
 
@@ -442,13 +445,14 @@ const Signup: React.FC = () => {
         }
       }, 2500);
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       setIsVerifying(false);
-      const msg =
-        err?.response?.data?.error?.message ||
-        err?.response?.data?.message ||
-        'Kode verifikasi salah atau telah kedaluwarsa.';
-      setError(msg);
+      setError(
+        getApiErrorMessage(
+          err,
+          'Kode verifikasi salah atau telah kedaluwarsa.',
+        ),
+      );
     },
   });
 

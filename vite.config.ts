@@ -7,11 +7,41 @@ import svgr from 'vite-plugin-svgr';
 export default defineConfig({
   plugins: [react(), tailwindcss(), svgr()],
   build: {
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router', 'react-router/dom'],
-          'query-vendor': ['@tanstack/react-query'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/react-router/') ||
+              id.includes('/react-router-dom/')
+            ) {
+              return 'react-vendor';
+            }
+            if (id.includes('@tanstack/react-query')) {
+              return 'query-vendor';
+            }
+            if (id.includes('livekit-client')) {
+              return 'livekit-vendor';
+            }
+            if (id.includes('recharts') || id.includes('/d3-') || id.includes('victory-vendor')) {
+              return 'charts-vendor';
+            }
+            if (
+              id.includes('react-markdown') ||
+              id.includes('remark-') ||
+              id.includes('micromark') ||
+              id.includes('mdast-') ||
+              id.includes('unist-')
+            ) {
+              return 'markdown-vendor';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons-vendor';
+            }
+          }
         },
       },
     },

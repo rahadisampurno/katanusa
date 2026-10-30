@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import {
   AlertCircle,
@@ -19,6 +19,7 @@ import {
   Users,
 } from 'lucide-react';
 import Sidebar from '../../../components/layout/Sidebar';
+import { getApiErrorMessage } from '../../../libs/apiError';
 import network from '../../../libs/network';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
@@ -54,18 +55,19 @@ export const AdminKnowledge: React.FC = () => {
 
   // Filters & Pagination
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const limit = 10;
 
-  const fetchKnowledge = async () => {
+  const fetchKnowledge = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (search.trim()) params.append('search', search.trim());
+      if (appliedSearch) params.append('search', appliedSearch);
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       params.append('page', String(page));
       params.append('limit', String(limit));
@@ -78,21 +80,21 @@ export const AdminKnowledge: React.FC = () => {
       setItems(res.data.items || []);
       setTotalPages(res.data.pagination.total_pages || 1);
       setTotalItems(res.data.pagination.total_items || 0);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Gagal memuat tata kelola pengetahuan.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Gagal memuat tata kelola pengetahuan.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [appliedSearch, page, statusFilter]);
 
   useEffect(() => {
-    fetchKnowledge();
-  }, [page, statusFilter]);
+    void fetchKnowledge();
+  }, [fetchKnowledge]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setAppliedSearch(search.trim());
     setPage(1);
-    fetchKnowledge();
   };
 
   const getClassificationBadge = (classification: string) => {

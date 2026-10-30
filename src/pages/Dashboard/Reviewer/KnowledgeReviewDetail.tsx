@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
   AlertCircle,
@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import Sidebar from '../../../components/layout/Sidebar';
+import { getApiErrorMessage } from '../../../libs/apiError';
 import network from '../../../libs/network';
 import auth from '../../../libs/auth';
 import dayjs from 'dayjs';
@@ -117,7 +118,7 @@ export const KnowledgeReviewDetail: React.FC = () => {
   const [escalateReason, setEscalateReason] = useState('');
   const [escalating, setEscalating] = useState(false);
 
-  const fetchDetail = async () => {
+  const fetchDetail = useCallback(async () => {
     if (!versionId) return;
     setLoading(true);
     setError(null);
@@ -126,20 +127,21 @@ export const KnowledgeReviewDetail: React.FC = () => {
         `/reviewer/knowledge/${versionId}`
       );
       setDetail(res.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          'Gagal memuat berkas kurasi pengetahuan. Pastikan Anda memiliki klaim penugasan aktif.'
+        getApiErrorMessage(
+          err,
+          'Gagal memuat berkas kurasi pengetahuan. Pastikan Anda memiliki klaim penugasan aktif.',
+        ),
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [versionId]);
 
   useEffect(() => {
-    fetchDetail();
-  }, [versionId]);
+    void fetchDetail();
+  }, [fetchDetail]);
 
   const handleRequestFileAccess = async () => {
     if (!versionId) return;
@@ -153,8 +155,8 @@ export const KnowledgeReviewDetail: React.FC = () => {
         authorized_until: string;
       }>(`/reviewer/knowledge/${versionId}/file-access`);
       setAuthorizedFile(res.data);
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Gagal mengakses berkas asli.');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Gagal mengakses berkas asli.'));
     } finally {
       setFileAccessLoading(false);
     }
@@ -166,8 +168,8 @@ export const KnowledgeReviewDetail: React.FC = () => {
     try {
       await network.post(`/reviewer/knowledge/${versionId}/release`);
       navigate('/reviewer/knowledge');
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Gagal melepaskan penugasan.');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Gagal melepaskan penugasan.'));
     }
   };
 
@@ -186,8 +188,8 @@ export const KnowledgeReviewDetail: React.FC = () => {
       setDecisionSuccess('Materi berhasil dieskalasi ke Dewan Adat.');
       fetchDetail();
       setTimeout(() => setDecisionSuccess(null), 5000);
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Gagal melakukan eskalasi.');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Gagal melakukan eskalasi.'));
     } finally {
       setEscalating(false);
     }
@@ -215,8 +217,10 @@ export const KnowledgeReviewDetail: React.FC = () => {
       setTimeout(() => {
         navigate('/reviewer/knowledge');
       }, 1500);
-    } catch (err: any) {
-      setDecisionError(err?.response?.data?.message || 'Gagal menyimpan keputusan kurasi.');
+    } catch (err: unknown) {
+      setDecisionError(
+        getApiErrorMessage(err, 'Gagal menyimpan keputusan kurasi.'),
+      );
     } finally {
       setSubmitting(false);
     }

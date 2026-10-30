@@ -36,6 +36,20 @@ interface PaymentModalProps {
   bookingData: BookingData | null;
 }
 
+declare global {
+  interface Window {
+    snap?: {
+      pay: (
+        token: string,
+        callbacks: {
+          onSuccess: () => void;
+          onPending: () => void;
+        },
+      ) => void;
+    };
+  }
+}
+
 const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
@@ -62,7 +76,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         import.meta.env.VITE_MIDTRANS_CLIENT_KEY,
       );
       document.body.appendChild(script);
-      (window as any).snap = (window as any).snap || {};
     }
   }, []);
 
@@ -84,8 +97,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         void navigate(
           `/payment/success?order_id=${response.data.result.bookingId}&provider=mock`,
         );
-      } else if (payment.token && (window as any).snap?.pay) {
-        (window as any).snap.pay(payment.token, {
+      } else if (payment.token && window.snap?.pay) {
+        window.snap.pay(payment.token, {
           onSuccess: (): void => {
             void navigate(
               `/payment/success?order_id=${response.data.result.bookingId}`,

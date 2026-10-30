@@ -406,17 +406,17 @@ const ReviewQueue: React.FC = () => {
                   >
                     Semua
                   </button>
-                  {[1, 2, 3, 4, 5, 6].map((stg) => (
+                  {(['1', '2', '3', '4', '5', '6'] as const).map((stg) => (
                     <button
                       key={stg}
                       type="button"
-                      onClick={() => setStageFilter(String(stg) as any)}
+                      onClick={() => setStageFilter(stg)}
                       className={`px-2 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
                         stageFilter === String(stg)
                           ? 'bg-[#b91c1c] text-white font-bold shadow-xs'
                           : 'text-[#536176] hover:text-[#17294b]'
                       }`}
-                      title={STAGE_LABELS[stg]}
+                      title={STAGE_LABELS[Number(stg)]}
                     >
                       Tahap {stg}
                     </button>

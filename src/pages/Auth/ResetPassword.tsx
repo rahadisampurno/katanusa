@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import AuthShell from '../../components/auth/AuthShell';
 import Button from '../../components/ui/Button';
+import { getApiErrorMessage } from '../../libs/apiError';
 import network from '../../libs/network';
 
 const ResetPassword: React.FC = () => {
@@ -49,12 +50,9 @@ const ResetPassword: React.FC = () => {
         navigate('/auth/login');
       }, 3000);
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       setIsLoading(false);
-      const msg =
-        err?.response?.data?.error?.message ||
-        err?.response?.data?.message ||
-        'Gagal memperbarui kata sandi.';
+      const msg = getApiErrorMessage(err, 'Gagal memperbarui kata sandi.');
 
       if (msg.toLowerCase().includes('recovery code')) {
         setNeedsRecoveryCode(true);

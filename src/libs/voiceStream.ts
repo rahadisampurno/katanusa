@@ -20,6 +20,7 @@ export type VoiceStreamCallbacks = {
   }) => void;
   onSentence?: (data: { index: number; text: string }) => void;
   onAudioChunk?: (chunk: VoiceAudioChunk) => void;
+  onAudioError?: (data: { index: number; text?: string }) => void;
   onDone?: (data: {
     text: string;
     timings?: { firstSentenceMs?: number; firstAudioMs?: number; totalMs?: number };
@@ -32,7 +33,7 @@ export type VoiceStreamCallbacks = {
  * Mendukung penghentian mendadak (barge-in) saat pengguna mulai berbicara kembali.
  */
 export class AudioQueuePlayer {
-  private queue: VoiceAudioChunk[] = [];
+  private queue: Array<VoiceAudioChunk & { useBrowserVoice?: boolean }> = [];
 
   private isStreamDone = false;
 
@@ -46,6 +47,8 @@ export class AudioQueuePlayer {
 
   private preloadedObjectUrl: string | null = null;
 
+  private preloadedIndex: number | null = null;
+
   private nextExpectedIndex = 0;
 
   private readonly onStartSpeaking?: () => void;
@@ -56,16 +59,20 @@ export class AudioQueuePlayer {
 
   private readonly onError?: (err: unknown, chunk?: VoiceAudioChunk) => void;
 
+  private readonly playBrowserVoice?: (text: string) => Promise<void>;
+
   public constructor(options: {
     onStartSpeaking?: () => void;
     onSentenceStart?: (chunk: VoiceAudioChunk) => void;
     onFinish?: () => void;
     onError?: (err: unknown, chunk?: VoiceAudioChunk) => void;
+    playBrowserVoice?: (text: string) => Promise<void>;
   } = {}) {
     this.onStartSpeaking = options.onStartSpeaking;
     this.onSentenceStart = options.onSentenceStart;
     this.onFinish = options.onFinish;
     this.onError = options.onError;
+    this.playBrowserVoice = options.playBrowserVoice;
   }
 
   public get isSpeaking(): boolean {
@@ -73,6 +80,10 @@ export class AudioQueuePlayer {
   }
 
   public addChunk(chunk: VoiceAudioChunk): void {
+    // Audio neural dapat tiba setelah fallback browser untuk index yang sama
+    // sudah mulai/selesai. Abaikan chunk basi agar antrean berikutnya tidak macet.
+    if (chunk.index < this.nextExpectedIndex) return;
+    if (this.queue.some((queued) => queued.index === chunk.index)) return;
     this.queue.push(chunk);
     this.queue.sort((a, b) => a.index - b.index);
 
@@ -80,6 +91,27 @@ export class AudioQueuePlayer {
       if (this.queue[0].index === this.nextExpectedIndex) {
         this.playNext();
       }
+    }
+  }
+
+  /**
+   * Menjaga urutan percakapan ketika TTS server gagal untuk satu kalimat.
+   * Kalimat tersebut tetap diucapkan memakai voice bawaan browser, sehingga
+   * antrean tidak macet menunggu index audio yang tidak akan pernah datang.
+   */
+  public addBrowserVoiceChunk(chunk: { index: number; text: string }): void {
+    if (chunk.index < this.nextExpectedIndex) return;
+    if (this.queue.some((queued) => queued.index === chunk.index)) return;
+    this.queue.push({
+      ...chunk,
+      audioBase64: '',
+      mimeType: '',
+      useBrowserVoice: true,
+    });
+    this.queue.sort((a, b) => a.index - b.index);
+
+    if (!this.isPlayingActive && this.queue[0]?.index === this.nextExpectedIndex) {
+      this.playNext();
     }
   }
 
@@ -100,26 +132,38 @@ export class AudioQueuePlayer {
 
   private cleanup(): void {
     if (this.currentAudio) {
-      this.currentAudio.pause();
-      this.currentAudio.onended = null;
-      this.currentAudio.onerror = null;
-      this.currentAudio.removeAttribute('src');
-      this.currentAudio.load();
+      const audio = this.currentAudio;
       this.currentAudio = null;
+      audio.onplay = null;
+      audio.onended = null;
+      audio.onerror = null;
+      try {
+        audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
+      } catch {
+        // Audio mungkin sudah dilepas browser ketika panggilan dihentikan.
+      }
     }
     if (this.currentObjectUrl) {
       URL.revokeObjectURL(this.currentObjectUrl);
       this.currentObjectUrl = null;
     }
     if (this.preloadedAudio) {
-      this.preloadedAudio.removeAttribute('src');
-      this.preloadedAudio.load();
+      const audio = this.preloadedAudio;
       this.preloadedAudio = null;
+      try {
+        audio.removeAttribute('src');
+        audio.load();
+      } catch {
+        // Preload bersifat best-effort.
+      }
     }
     if (this.preloadedObjectUrl) {
       URL.revokeObjectURL(this.preloadedObjectUrl);
       this.preloadedObjectUrl = null;
     }
+    this.preloadedIndex = null;
   }
 
   private createAudioFromBase64(base64: string, mimeType: string): { audio: HTMLAudioElement; url: string } {
@@ -159,26 +203,55 @@ export class AudioQueuePlayer {
     this.isPlayingActive = true;
     this.nextExpectedIndex = nextChunk.index + 1;
 
-    // Bersihkan audio sebelumnya
+    // Bersihkan audio sebelumnya sebelum memainkan audio server maupun fallback.
     if (this.currentAudio) {
-      this.currentAudio.pause();
-      this.currentAudio.onended = null;
-      this.currentAudio.onerror = null;
+      const previousAudio = this.currentAudio;
+      this.currentAudio = null;
+      previousAudio.onplay = null;
+      previousAudio.onended = null;
+      previousAudio.onerror = null;
+      try {
+        previousAudio.pause();
+      } catch {
+        // Elemen sebelumnya mungkin sudah selesai dan dilepas.
+      }
     }
     if (this.currentObjectUrl) {
       URL.revokeObjectURL(this.currentObjectUrl);
       this.currentObjectUrl = null;
     }
 
+    if (nextChunk.useBrowserVoice) {
+      if (isFirstPlay) this.onStartSpeaking?.();
+      this.onSentenceStart?.(nextChunk);
+      void (this.playBrowserVoice?.(nextChunk.text) ?? Promise.resolve())
+        .catch((error) => {
+          this.onError?.(error, nextChunk);
+        })
+        .finally(() => {
+          this.playNext();
+        });
+      return;
+    }
+
     // Gunakan preloaded jika cocok
     let audio: HTMLAudioElement;
     let url: string;
-    if (this.preloadedAudio && this.preloadedObjectUrl) {
+    if (
+      this.preloadedAudio &&
+      this.preloadedObjectUrl &&
+      this.preloadedIndex === nextChunk.index
+    ) {
       audio = this.preloadedAudio;
       url = this.preloadedObjectUrl;
       this.preloadedAudio = null;
       this.preloadedObjectUrl = null;
+      this.preloadedIndex = null;
     } else {
+      if (this.preloadedObjectUrl) URL.revokeObjectURL(this.preloadedObjectUrl);
+      this.preloadedAudio = null;
+      this.preloadedObjectUrl = null;
+      this.preloadedIndex = null;
       const created = this.createAudioFromBase64(nextChunk.audioBase64, nextChunk.mimeType);
       audio = created.audio;
       url = created.url;
@@ -188,11 +261,12 @@ export class AudioQueuePlayer {
     this.currentObjectUrl = url;
 
     // Mulai preload chunk berikutnya jika ada di antrean
-    if (this.queue.length > 0 && !this.preloadedAudio) {
+    if (this.queue.length > 0 && !this.queue[0].useBrowserVoice && !this.preloadedAudio) {
       const ahead = this.queue[0];
       const preloaded = this.createAudioFromBase64(ahead.audioBase64, ahead.mimeType);
       this.preloadedAudio = preloaded.audio;
       this.preloadedObjectUrl = preloaded.url;
+      this.preloadedIndex = ahead.index;
       this.preloadedAudio.preload = 'auto';
     }
 
@@ -267,7 +341,7 @@ export const streamVoiceTurn = async (
       // response bukan json
     }
     callbacks.onError?.({ message: errorMessage, retryable: true });
-    return;
+    throw new Error(errorMessage);
   }
 
   const reader = response.body?.getReader();
@@ -276,11 +350,12 @@ export const streamVoiceTurn = async (
       message: 'Browser tidak mendukung pembaca aliran respon (ReadableStream).',
       retryable: false,
     });
-    return;
+    throw new Error('Browser tidak mendukung pembaca aliran respon (ReadableStream).');
   }
 
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
+  let reportedStreamError: Error | null = null;
 
   try {
     for (;;) {
@@ -326,11 +401,20 @@ export const streamVoiceTurn = async (
                 mimeType: parsed.mimeType || 'audio/wav',
               });
               break;
+            case 'audio_error':
+              callbacks.onAudioError?.({
+                index: parsed.index,
+                text: parsed.text,
+              });
+              break;
             case 'done':
               callbacks.onDone?.(parsed);
               break;
             case 'error':
               callbacks.onError?.(parsed);
+              reportedStreamError = new Error(
+                parsed.message || 'Koneksi aliran suara terputus.',
+              );
               break;
             default:
               break;
@@ -340,6 +424,7 @@ export const streamVoiceTurn = async (
         }
       }
     }
+    if (reportedStreamError) throw reportedStreamError;
   } catch (streamErr) {
     if (options.signal?.aborted) {
       // Pembatalan disengaja (barge-in / end call)
@@ -347,9 +432,13 @@ export const streamVoiceTurn = async (
     }
     callbacks.onError?.({
       code: 'NETWORK_STREAM_ERROR',
-      message: 'Koneksi aliran suara terputus.',
+      message:
+        streamErr instanceof Error
+          ? streamErr.message
+          : 'Koneksi aliran suara terputus.',
       retryable: true,
     });
+    throw streamErr;
   }
 };
 

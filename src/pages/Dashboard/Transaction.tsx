@@ -180,7 +180,16 @@ const Transaction: React.FC = () => {
               <select
                 className="pl-9 pr-8 py-2 bg-[#1E315A] border border-white/10 rounded-xl text-white text-xs outline-none focus:border-amber-400 cursor-pointer w-full sm:w-44"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (
+                    value === 'all' ||
+                    value === 'success' ||
+                    value === 'pending'
+                  ) {
+                    setStatusFilter(value);
+                  }
+                }}
               >
                 <option value="all">Semua Status Sesi</option>
                 <option value="success">Terkonfirmasi &amp; Terjadwal</option>

@@ -133,8 +133,9 @@ const DetailExperts = (): JSX.Element => {
                 <div className="absolute inset-x-0 top-0 z-10 h-1 bg-gradient-to-r from-red-600 via-amber-400 to-red-600" />
                 {!imgError && expert.image ? (
                   <img
-                    src={expert.image}
+                    src={expert.image.endsWith('.png') ? expert.image.replace(/\.png$/i, '.webp') : expert.image}
                     alt={`Potret ${expert.name}`}
+                    decoding="async"
                     onError={() => setImgError(true)}
                     className="h-[460px] w-full object-cover"
                   />

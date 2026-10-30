@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import {
   AlertCircle,
@@ -23,6 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import Sidebar from '../../../components/layout/Sidebar';
+import { getApiErrorMessage } from '../../../libs/apiError';
 import network from '../../../libs/network';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
@@ -70,6 +71,7 @@ export const AdminExpertApplications: React.FC = () => {
 
   // Filters & Pagination
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
@@ -91,12 +93,12 @@ export const AdminExpertApplications: React.FC = () => {
   // Action status message
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (search.trim()) params.append('search', search.trim());
+      if (appliedSearch) params.append('search', appliedSearch);
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       if (stageFilter && stageFilter !== 'all') params.append('stage', stageFilter);
       params.append('page', String(page));
@@ -110,12 +112,12 @@ export const AdminExpertApplications: React.FC = () => {
       setApplications(res.data.items || []);
       setTotalPages(res.data.pagination.total_pages || 1);
       setTotalItems(res.data.pagination.total_items || 0);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Gagal memuat daftar pengajuan pakar.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Gagal memuat daftar pengajuan pakar.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [appliedSearch, page, stageFilter, statusFilter]);
 
   const fetchReviewers = async () => {
     setLoadingReviewers(true);
@@ -130,8 +132,8 @@ export const AdminExpertApplications: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchApplications();
-  }, [page, statusFilter, stageFilter]);
+    void fetchApplications();
+  }, [fetchApplications]);
 
   useEffect(() => {
     fetchReviewers();
@@ -139,8 +141,8 @@ export const AdminExpertApplications: React.FC = () => {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setAppliedSearch(search.trim());
     setPage(1);
-    fetchApplications();
   };
 
   const handleOpenAssignModal = (app: ApplicationItem) => {
@@ -166,8 +168,8 @@ export const AdminExpertApplications: React.FC = () => {
         setSelectedApp(null);
         fetchApplications();
       }, 1200);
-    } catch (err: any) {
-      setAssignError(err?.response?.data?.message || 'Gagal menugaskan reviewer.');
+    } catch (err: unknown) {
+      setAssignError(getApiErrorMessage(err, 'Gagal menugaskan reviewer.'));
     } finally {
       setAssigning(false);
     }
@@ -181,8 +183,8 @@ export const AdminExpertApplications: React.FC = () => {
       setActionNotice('Batas waktu penugasan berhasil diperpanjang 48 jam.');
       fetchApplications();
       setTimeout(() => setActionNotice(null), 4000);
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Gagal memperpanjang penugasan.');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Gagal memperpanjang penugasan.'));
     }
   };
 
@@ -195,8 +197,8 @@ export const AdminExpertApplications: React.FC = () => {
       setActionNotice('Penugasan berhasil dilepas.');
       fetchApplications();
       setTimeout(() => setActionNotice(null), 4000);
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Gagal membatalkan penugasan.');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Gagal membatalkan penugasan.'));
     }
   };
 
